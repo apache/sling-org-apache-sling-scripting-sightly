@@ -1,4 +1,4 @@
-target
+/target
 .idea
 .classpath
 .metadata
@@ -15,4 +15,3 @@ maven-eclipse.xml
 .DS_Store
 jcr.log
 atlassian-ide-plugin.xml
-
