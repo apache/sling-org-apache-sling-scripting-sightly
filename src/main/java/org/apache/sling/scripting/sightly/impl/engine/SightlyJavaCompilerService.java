@@ -23,7 +23,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -75,6 +79,8 @@ public class SightlyJavaCompilerService {
     @Reference
     private ScriptingResourceResolverProvider scriptingResourceResolverProvider = null;
 
+    private Map<String, Lock> compilationLocks = new HashMap<>();
+
     private Options options;
 
     /**
@@ -120,8 +126,17 @@ public class SightlyJavaCompilerService {
      * @return object instance of the class to compile
      */
     public Object compileSource(SourceIdentifier sourceIdentifier, String sourceCode) {
+        Lock lock;
+        final String fqcn = sourceIdentifier.getFullyQualifiedClassName();
+        synchronized (compilationLocks) {
+            lock = compilationLocks.get(fqcn);
+            if (lock == null) {
+                lock = new ReentrantLock();
+                compilationLocks.put(fqcn, lock);
+            }
+        }
+        lock.lock();
         try {
-            String fqcn = sourceIdentifier.getFullyQualifiedClassName();
             if (sightlyEngineConfiguration.keepGenerated()) {
                 String path = "/" + fqcn.replaceAll("\\.", "/") + ".java";
                 OutputStream os = classLoaderWriter.getOutputStream(path);
@@ -166,8 +181,11 @@ public class SightlyJavaCompilerService {
             return classLoaderWriter.getClassLoader().loadClass(fqcn).newInstance();
         } catch (Exception e) {
             throw new SightlyException(e);
+        } finally {
+            lock.unlock();
         }
     }
+
 
     private Object getUseObjectAndRecompileIfNeeded(Resource pojoResource)
             throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException {
