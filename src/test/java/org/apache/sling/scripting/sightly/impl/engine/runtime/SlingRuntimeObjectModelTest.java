@@ -36,19 +36,28 @@ public class SlingRuntimeObjectModelTest {
     private SlingRuntimeObjectModel slingRuntimeObjectModel = new SlingRuntimeObjectModel();
 
     @Test
-    public void getPropertyFromAdaptableWithField() throws Exception {
+    public void getPropertyFromAdaptableWithField() {
         assertEquals("Expected public fields to have priority over ValueMap adaptable's properties.", FieldTestMockAdaptable.test,
                 slingRuntimeObjectModel.getProperty(new FieldTestMockAdaptable(), "test"));
     }
 
     @Test
-    public void getPropertyFromAdaptableWithMethod() throws Exception {
+    public void getPropertyFromAdaptableWithMethod() {
         assertEquals("Expected public methods to have priority over ValueMap adaptable's properties.", METHOD_VALUE,
                 slingRuntimeObjectModel.getProperty(new MethodTestMockAdaptable(), "test"));
-    }@Test
-    public void getPropertyFromAdaptable() throws Exception {
+    }
+
+    @Test
+    public void getPropertyFromAdaptable() {
         assertEquals("Expected to solve property from ValueMap returned by an adaptable.", VALUE_MAP_VALUE,
                 slingRuntimeObjectModel.getProperty(new AdaptableTestMock(), "test"));
+    }
+
+    @Test
+    public void nullChecks() {
+        assertNull(slingRuntimeObjectModel.getProperty(null, null));
+        assertNull(slingRuntimeObjectModel.getProperty(this, null));
+        assertNull(slingRuntimeObjectModel.getProperty(this, ""));
     }
 
     private abstract class MockAdaptable implements Adaptable {
