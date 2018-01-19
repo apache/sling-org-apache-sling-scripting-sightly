@@ -26,6 +26,9 @@ public class SlingRuntimeObjectModel extends AbstractRuntimeObjectModel {
 
     @Override
     protected Object getProperty(Object target, Object propertyObj) {
+        if (target == null || propertyObj == null) {
+            return null;
+        }
         Object result = super.getProperty(target, propertyObj);
         if (result == null && target instanceof Adaptable) {
             ValueMap valueMap = ((Adaptable) target).adaptTo(ValueMap.class);
