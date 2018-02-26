@@ -82,9 +82,8 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
         PrintWriter printWriter = new PrintWriter(writer);
         if (pathObj instanceof Resource) {
             Resource includedResource = (Resource) pathObj;
-            Map<String, String> dispatcherOptionsMap = handleSelectors(request, new LinkedHashSet<String>(), opts, runtimeObjectModel);
-            String dispatcherOptions = createDispatcherOptions(dispatcherOptionsMap);
-            includeResource(bindings, printWriter, includedResource, dispatcherOptions, resourceType);
+            RequestDispatcherOptions requestDispatcherOptions = handleSelectors(request, new LinkedHashSet<String>(), opts, runtimeObjectModel);
+            includeResource(bindings, printWriter, includedResource, requestDispatcherOptions, resourceType);
         } else {
             String includePath = runtimeObjectModel.toString(pathObj);
             // build path completely
@@ -94,48 +93,45 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
                 Resource includedResource = request.getResourceResolver().getResource(includePath);
                 PathInfo pathInfo;
                 if (includedResource != null) {
-                    Map<String, String> dispatcherOptionsMap =
+                    RequestDispatcherOptions requestDispatcherOptions =
                             handleSelectors(request, new LinkedHashSet<String>(), opts, runtimeObjectModel);
-                    String dispatcherOptions = createDispatcherOptions(dispatcherOptionsMap);
-                    includeResource(bindings, printWriter, includedResource, dispatcherOptions, resourceType);
+                    includeResource(bindings, printWriter, includedResource, requestDispatcherOptions, resourceType);
                 } else {
                     // analyse path and decompose potential selectors from the path
                     pathInfo = new PathInfo(includePath);
-                    Map<String, String> dispatcherOptionsMap = handleSelectors(request, pathInfo.selectors, opts, runtimeObjectModel);
-                    String dispatcherOptions = createDispatcherOptions(dispatcherOptionsMap);
-                    includeResource(bindings, printWriter, pathInfo.path, dispatcherOptions, resourceType);
+                    RequestDispatcherOptions requestDispatcherOptions = handleSelectors(request, pathInfo.selectors, opts, runtimeObjectModel);
+                    includeResource(bindings, printWriter, pathInfo.path, requestDispatcherOptions, resourceType);
                 }
             } else {
                 // use the current resource
-                Map<String, String> dispatcherOptionsMap = handleSelectors(request, new LinkedHashSet<String>(), opts, runtimeObjectModel);
-                String dispatcherOptions = createDispatcherOptions(dispatcherOptionsMap);
-                includeResource(bindings, printWriter, request.getResource(), dispatcherOptions, resourceType);
+                RequestDispatcherOptions requestDispatcherOptions = handleSelectors(request, new LinkedHashSet<String>(), opts, runtimeObjectModel);
+                includeResource(bindings, printWriter, request.getResource(), requestDispatcherOptions, resourceType);
             }
         }
         ExtensionUtils.setRequestAttributes(request, originalAttributes);
         return writer.toString();
     }
 
-    private Map<String, String> handleSelectors(SlingHttpServletRequest request, Set<String> selectors, Map<String, Object> options,
+    private RequestDispatcherOptions handleSelectors(SlingHttpServletRequest request, Set<String> selectors, Map<String, Object> options,
                                                 RuntimeObjectModel runtimeObjectModel) {
+        RequestDispatcherOptions requestDispatcherOptions = new RequestDispatcherOptions();
         if (selectors.isEmpty()) {
             selectors.addAll(Arrays.asList(request.getRequestPathInfo().getSelectors()));
         }
-        Map<String, String> dispatcherOptionsMap = new HashMap<>();
-        dispatcherOptionsMap.put(OPTION_ADD_SELECTORS, getSelectorString(selectors));
-        dispatcherOptionsMap.put(OPTION_REPLACE_SELECTORS, " ");
+        requestDispatcherOptions.setAddSelectors(getSelectorString(selectors));
+        requestDispatcherOptions.setReplaceSelectors(" ");
         if (options.containsKey(OPTION_SELECTORS)) {
             Object selectorsObject = getAndRemoveOption(options, OPTION_SELECTORS);
             selectors.clear();
             addSelectors(selectors, selectorsObject, runtimeObjectModel);
-            dispatcherOptionsMap.put(OPTION_ADD_SELECTORS, getSelectorString(selectors));
-            dispatcherOptionsMap.put(OPTION_REPLACE_SELECTORS, " ");
+            requestDispatcherOptions.setAddSelectors(getSelectorString(selectors));
+            requestDispatcherOptions.setReplaceSelectors(" ");
         }
         if (options.containsKey(OPTION_ADD_SELECTORS)) {
             Object selectorsObject = getAndRemoveOption(options, OPTION_ADD_SELECTORS);
             addSelectors(selectors, selectorsObject, runtimeObjectModel);
-            dispatcherOptionsMap.put(OPTION_ADD_SELECTORS, getSelectorString(selectors));
-            dispatcherOptionsMap.put(OPTION_REPLACE_SELECTORS, " ");
+            requestDispatcherOptions.setAddSelectors(getSelectorString(selectors));
+            requestDispatcherOptions.setReplaceSelectors(" ");
         }
         if (options.containsKey(OPTION_REMOVE_SELECTORS)) {
             Object selectorsObject = getAndRemoveOption(options, OPTION_REMOVE_SELECTORS);
@@ -157,13 +153,13 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
             }
             String selectorString = getSelectorString(selectors);
             if (StringUtils.isEmpty(selectorString)) {
-                dispatcherOptionsMap.put(OPTION_REPLACE_SELECTORS, " ");
+                requestDispatcherOptions.setReplaceSelectors(" ");
             } else {
-                dispatcherOptionsMap.put(OPTION_ADD_SELECTORS, getSelectorString(selectors));
-                dispatcherOptionsMap.put(OPTION_REPLACE_SELECTORS, " ");
+                requestDispatcherOptions.setAddSelectors(getSelectorString(selectors));
+                requestDispatcherOptions.setReplaceSelectors(" ");
             }
         }
-        return dispatcherOptionsMap;
+        return requestDispatcherOptions;
     }
 
     private void addSelectors(Set<String> selectors, Object selectorsObject, RuntimeObjectModel runtimeObjectModel) {
@@ -211,28 +207,6 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
         return ResourceUtil.normalize(finalPath);
     }
 
-    private String createDispatcherOptions(Map<String, String> options) {
-        if (options == null || options.isEmpty()) {
-            return null;
-        }
-        StringBuilder buffer = new StringBuilder();
-        boolean hasPreceding = false;
-        for (Map.Entry<String, String> option : options.entrySet()) {
-            if (hasPreceding) {
-                buffer.append(", ");
-            }
-            String key = option.getKey();
-            buffer.append(key).append("=");
-            String strVal = option.getValue();
-            if (strVal == null) {
-                strVal = "";
-            }
-            buffer.append(strVal);
-            hasPreceding = true;
-        }
-        return buffer.toString();
-    }
-
     private String getOption(String option, Map<String, Object> options, String defaultValue) {
         if (options.containsKey(option)) {
             return (String) options.get(option);
@@ -257,7 +231,7 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
         return sb.toString();
     }
 
-    private void includeResource(final Bindings bindings, PrintWriter out, String path, String dispatcherOptions, String resourceType) {
+    private void includeResource(final Bindings bindings, PrintWriter out, String path, RequestDispatcherOptions requestDispatcherOptions, String resourceType) {
         if (StringUtils.isEmpty(path)) {
             throw new SightlyException("Resource path cannot be empty");
         } else {
@@ -266,21 +240,20 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
             if (ResourceUtil.isNonExistingResource(includeRes)) {
                 includeRes = new SyntheticResource(request.getResourceResolver(), path, resourceType);
             }
-            includeResource(bindings, out, includeRes, dispatcherOptions, resourceType);
+            includeResource(bindings, out, includeRes, requestDispatcherOptions, resourceType);
         }
     }
 
-    private void includeResource(final Bindings bindings, PrintWriter out, Resource includeRes, String dispatcherOptions, String resourceType) {
+    private void includeResource(final Bindings bindings, PrintWriter out, Resource includeRes, RequestDispatcherOptions requestDispatcherOptions, String resourceType) {
         if (includeRes == null) {
             throw new SightlyException("Resource cannot be null");
         } else {
             SlingHttpServletResponse customResponse = new PrintWriterResponseWrapper(out, BindingsUtils.getResponse(bindings));
             SlingHttpServletRequest request = BindingsUtils.getRequest(bindings);
-            RequestDispatcherOptions opts = new RequestDispatcherOptions(dispatcherOptions);
             if (StringUtils.isNotEmpty(resourceType)) {
-                opts.setForceResourceType(resourceType);
+                requestDispatcherOptions.setForceResourceType(resourceType);
             }
-            RequestDispatcher dispatcher = request.getRequestDispatcher(includeRes, opts);
+            RequestDispatcher dispatcher = request.getRequestDispatcher(includeRes, requestDispatcherOptions);
             try {
                 if (dispatcher != null) {
                     dispatcher.include(request, customResponse);
