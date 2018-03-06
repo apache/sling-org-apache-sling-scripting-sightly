@@ -31,6 +31,7 @@ import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.commons.classloader.ClassLoaderWriter;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyJavaCompilerService;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
+import org.apache.sling.scripting.sightly.impl.utils.Patterns;
 import org.apache.sling.scripting.sightly.pojo.Use;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.use.ProviderOutcome;
@@ -64,7 +65,6 @@ public class JavaUseProvider implements UseProvider {
 
     public static final String ADAPTABLE = "adaptable";
     private static final Logger LOG = LoggerFactory.getLogger(JavaUseProvider.class);
-    private static final Pattern JAVA_PATTERN = Pattern.compile("([[\\p{L}&&[^\\p{Lu}]]_$][\\p{L}\\p{N}_$]*\\.)*[\\p{Lu}_$][\\p{L}\\p{N}_$]*");
 
     @Reference
     private SightlyJavaCompilerService sightlyJavaCompilerService = null;
@@ -74,7 +74,7 @@ public class JavaUseProvider implements UseProvider {
 
     @Override
     public ProviderOutcome provide(String identifier, RenderContext renderContext, Bindings arguments) {
-        if (!JAVA_PATTERN.matcher(identifier).matches()) {
+        if (!Patterns.JAVA_CLASS_NAME.matcher(identifier).matches()) {
             LOG.debug("Identifier {} does not match a Java class name pattern.", identifier);
             return ProviderOutcome.failure();
         }

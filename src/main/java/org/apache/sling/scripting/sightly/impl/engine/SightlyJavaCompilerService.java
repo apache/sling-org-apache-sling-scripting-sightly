@@ -42,6 +42,7 @@ import org.apache.sling.commons.compiler.Options;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.impl.engine.compiled.SourceIdentifier;
+import org.apache.sling.scripting.sightly.impl.utils.Patterns;
 import org.apache.sling.scripting.sightly.impl.utils.ScriptUtils;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.osgi.service.component.annotations.Activate;
@@ -62,7 +63,6 @@ import org.slf4j.LoggerFactory;
 public class SightlyJavaCompilerService {
 
     private static final Logger LOG = LoggerFactory.getLogger(SightlyJavaCompilerService.class);
-    private static final Pattern PACKAGE_DECL_PATTERN = Pattern.compile("(\\s*)package\\s+([a-zA-Z_$][a-zA-Z\\d_$]*\\.?)+;");
 
     @Reference
     private ClassLoaderWriter classLoaderWriter = null;
@@ -146,7 +146,7 @@ public class SightlyJavaCompilerService {
             String[] sourceCodeLines = sourceCode.split("\\r\\n|[\\n\\x0B\\x0C\\r\\u0085\\u2028\\u2029]");
             boolean foundPackageDeclaration = false;
             for (String line : sourceCodeLines) {
-                Matcher matcher = PACKAGE_DECL_PATTERN.matcher(line);
+                Matcher matcher = Patterns.JAVA_PACKAGE_DECLARATION.matcher(line);
                 if (matcher.matches()) {
                 /*
                  * This matching might return false positives like:
