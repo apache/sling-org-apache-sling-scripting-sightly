@@ -53,6 +53,9 @@ public class PatternsTest {
                 "package org.apache.sling.scripting.sightly.impl.utils ; ", true,
         };
         testPattern(Patterns.JAVA_PACKAGE_DECLARATION, inputs);
+        // pattern from org.apache.sling.scripting.sightly.impl.engine.SightlyJavaCompilerService before SLING-7523
+        // Pattern PACKAGE_DECL_PATTERN = Pattern.compile("(\\s*)package\\s+([a-zA-Z_$][a-zA-Z\\d_$]*\\.?)+;");
+        // testPattern(PACKAGE_DECL_PATTERN, inputs);
     }
 
     @Test
@@ -74,28 +77,6 @@ public class PatternsTest {
         };
         testPattern(Patterns.JAVA_CLASS_NAME, inputs);
     }
-
-//    @Test
-//    public void testSLING_7523Pattern() {
-//        // pattern from org.apache.sling.scripting.sightly.impl.engine.SightlyJavaCompilerService before SLING-7523
-//        Pattern PACKAGE_DECL_PATTERN = Pattern.compile("(\\s*)package\\s+([a-zA-Z_$][a-zA-Z\\d_$]*\\.?)+;");
-//        Object[] inputs = new Object[]{
-//                "package org.apache.sling.scripting.sightly.impl.utils; ", true,
-//                "package org.apache.sling.scripting.sightly.impl_utils; ", true,
-//                "package org.apache.sling.scripting.sightly.impl_utils;", true,
-//                "package org.apache.sling.scripting.sightly.impl.utils;", true,
-//                "package $org.apache.sling.scripting.sightly.impl.utils;", true,
-//                "package _org.apache.sling.scripting.sightly.impl.utils;", true,
-//                "package org.apa_che.sling.scripting.sightly.impl.utils;", true,
-//                "package org.ap$che.sling.scripting.sightly.impl.utils;", true,
-//                "package org.ap4che.$sling._scripting.sightly.impl.utils;", true,
-//                "package 1org.apache.sling.scripting.sightly.impl.utils;", false,
-//                "package org.1apache.sling.scripting.sightly.impl.utils;", false,
-//                "package\torg.apache.sling.scripting.sightly.impl.utils;\t", true,
-//                "package org.apache.sling.scripting.sightly.impl.utils ; ", true,
-//        };
-//        testPattern(PACKAGE_DECL_PATTERN, inputs);
-//    }
 
     private void testPattern(Pattern pattern, Object[] inputs) {
         StringBuilder errors = new StringBuilder();

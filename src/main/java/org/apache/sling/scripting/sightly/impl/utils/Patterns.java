@@ -20,9 +20,11 @@ package org.apache.sling.scripting.sightly.impl.utils;
 
 import java.util.regex.Pattern;
 
-public class Patterns {
+public final class Patterns {
 
     private static final String JAVA_IDENTIFIER_REGEX = "[\\p{L}\\p{Sc}_][\\p{L}\\p{N}\\p{Sc}_]*";
+
+    private Patterns() {}
 
     /**
      * Pattern matching valid Java package declarations, according to
