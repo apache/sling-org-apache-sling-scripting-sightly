@@ -24,6 +24,8 @@ public final class Patterns {
 
     private static final String JAVA_IDENTIFIER_REGEX = "[\\p{L}\\p{Sc}_][\\p{L}\\p{N}\\p{Sc}_]*";
 
+    private static final String JAVA_SIMPLE_CLASS_NAME_REGEX = "[\\p{Lu}\\p{Sc}_][\\p{L}\\p{N}\\p{Sc}_]*";
+
     private Patterns() {}
 
     /**
@@ -37,6 +39,7 @@ public final class Patterns {
      * Pattern matching Java class names (simple or fully qualified), according to
      * <a href="https://docs.oracle.com/javase/specs/jls/se7/html/index.html">The Java® Language Specification, 7th edition</a>.
      */
-    public static final Pattern JAVA_CLASS_NAME = Pattern.compile(JAVA_IDENTIFIER_REGEX + "(\\." + JAVA_IDENTIFIER_REGEX + ")*");
+    public static final Pattern JAVA_CLASS_NAME =
+            Pattern.compile("(" + JAVA_IDENTIFIER_REGEX + "\\.{1})*(" + JAVA_SIMPLE_CLASS_NAME_REGEX + ")");
 
 }

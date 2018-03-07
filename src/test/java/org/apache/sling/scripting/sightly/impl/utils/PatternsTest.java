@@ -73,7 +73,15 @@ public class PatternsTest {
                 "_", true,
                 "$_", true,
                 "$_1", true,
-                "package_info", true,
+                "package_info", false,
+                "org.apache.sling.scripting.sightly.impl.utils.patternsTest", false,
+                "a.js", false,
+                "org.aspectj.weaver.patterns" +
+                        ".HasThisTypePatternTriedToSneakInSomeGenericOrParameterizedTypePatternMatchingStuffAnywhereVisitor", true,
+                "org.aspectj.weaver.patterns" +
+                        ".HasThisTypePatternTriedToSneakInSomeGenericOrParameterizedTypePatternMatchingStuffAnywhereVisitor ", false,
+                "org.aspectj.weaver.patterns" +
+                        ".HasThisTypePatternTriedToSneakInSomeGeneric Or ParameterizedTypePatternMatchingStuffAnywhereVisitor ", false,
         };
         testPattern(Patterns.JAVA_CLASS_NAME, inputs);
     }
