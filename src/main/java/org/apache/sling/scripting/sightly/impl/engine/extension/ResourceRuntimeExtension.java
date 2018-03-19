@@ -119,19 +119,19 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
             selectors.addAll(Arrays.asList(request.getRequestPathInfo().getSelectors()));
         }
         requestDispatcherOptions.setAddSelectors(getSelectorString(selectors));
-        requestDispatcherOptions.setReplaceSelectors(" ");
+        requestDispatcherOptions.setReplaceSelectors("");
         if (options.containsKey(OPTION_SELECTORS)) {
             Object selectorsObject = getAndRemoveOption(options, OPTION_SELECTORS);
             selectors.clear();
             addSelectors(selectors, selectorsObject, runtimeObjectModel);
             requestDispatcherOptions.setAddSelectors(getSelectorString(selectors));
-            requestDispatcherOptions.setReplaceSelectors(" ");
+            requestDispatcherOptions.setReplaceSelectors("");
         }
         if (options.containsKey(OPTION_ADD_SELECTORS)) {
             Object selectorsObject = getAndRemoveOption(options, OPTION_ADD_SELECTORS);
             addSelectors(selectors, selectorsObject, runtimeObjectModel);
             requestDispatcherOptions.setAddSelectors(getSelectorString(selectors));
-            requestDispatcherOptions.setReplaceSelectors(" ");
+            requestDispatcherOptions.setReplaceSelectors("");
         }
         if (options.containsKey(OPTION_REMOVE_SELECTORS)) {
             Object selectorsObject = getAndRemoveOption(options, OPTION_REMOVE_SELECTORS);
@@ -153,10 +153,10 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
             }
             String selectorString = getSelectorString(selectors);
             if (StringUtils.isEmpty(selectorString)) {
-                requestDispatcherOptions.setReplaceSelectors(" ");
+                requestDispatcherOptions.setReplaceSelectors("");
             } else {
                 requestDispatcherOptions.setAddSelectors(getSelectorString(selectors));
-                requestDispatcherOptions.setReplaceSelectors(" ");
+                requestDispatcherOptions.setReplaceSelectors("");
             }
         }
         return requestDispatcherOptions;
@@ -228,7 +228,8 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
                 i++;
             }
         }
-        return sb.toString();
+        String selectorString = sb.toString();
+        return StringUtils.isNotEmpty(selectorString) ? selectorString : null;
     }
 
     private void includeResource(final Bindings bindings, PrintWriter out, String path, RequestDispatcherOptions requestDispatcherOptions, String resourceType) {
