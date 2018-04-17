@@ -62,7 +62,6 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
     private static final String OPTION_SELECTORS = "selectors";
     private static final String OPTION_REMOVE_SELECTORS = "removeSelectors";
     private static final String OPTION_ADD_SELECTORS = "addSelectors";
-    private static final String OPTION_REPLACE_SELECTORS = "replaceSelectors";
     private static final String OPTION_REQUEST_ATTRIBUTES = "requestAttributes";
 
     @Override
@@ -77,13 +76,12 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
         SlingHttpServletRequest request = BindingsUtils.getRequest(bindings);
         Map originalAttributes = ExtensionUtils.setRequestAttributes(request, (Map)options.remove(OPTION_REQUEST_ATTRIBUTES));
         RuntimeObjectModel runtimeObjectModel = renderContext.getObjectModel();
-        String resourceType = runtimeObjectModel.toString(getAndRemoveOption(opts, OPTION_RESOURCE_TYPE));
         StringWriter writer = new StringWriter();
         PrintWriter printWriter = new PrintWriter(writer);
         if (pathObj instanceof Resource) {
             Resource includedResource = (Resource) pathObj;
-            RequestDispatcherOptions requestDispatcherOptions = handleSelectors(request, new LinkedHashSet<String>(), opts, runtimeObjectModel);
-            includeResource(bindings, printWriter, includedResource, requestDispatcherOptions, resourceType);
+            RequestDispatcherOptions requestDispatcherOptions = handleDispatcherOptions(request, new LinkedHashSet<String>(), opts, runtimeObjectModel);
+            includeResource(bindings, printWriter, includedResource, requestDispatcherOptions);
         } else {
             String includePath = runtimeObjectModel.toString(pathObj);
             // build path completely
@@ -94,26 +92,26 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
                 PathInfo pathInfo;
                 if (includedResource != null) {
                     RequestDispatcherOptions requestDispatcherOptions =
-                            handleSelectors(request, new LinkedHashSet<String>(), opts, runtimeObjectModel);
-                    includeResource(bindings, printWriter, includedResource, requestDispatcherOptions, resourceType);
+                            handleDispatcherOptions(request, new LinkedHashSet<String>(), opts, runtimeObjectModel);
+                    includeResource(bindings, printWriter, includedResource, requestDispatcherOptions);
                 } else {
                     // analyse path and decompose potential selectors from the path
                     pathInfo = new PathInfo(includePath);
-                    RequestDispatcherOptions requestDispatcherOptions = handleSelectors(request, pathInfo.selectors, opts, runtimeObjectModel);
-                    includeResource(bindings, printWriter, pathInfo.path, requestDispatcherOptions, resourceType);
+                    RequestDispatcherOptions requestDispatcherOptions = handleDispatcherOptions(request, pathInfo.selectors, opts, runtimeObjectModel);
+                    includeResource(bindings, printWriter, pathInfo.path, requestDispatcherOptions);
                 }
             } else {
                 // use the current resource
-                RequestDispatcherOptions requestDispatcherOptions = handleSelectors(request, new LinkedHashSet<String>(), opts, runtimeObjectModel);
-                includeResource(bindings, printWriter, request.getResource(), requestDispatcherOptions, resourceType);
+                RequestDispatcherOptions requestDispatcherOptions = handleDispatcherOptions(request, new LinkedHashSet<String>(), opts, runtimeObjectModel);
+                includeResource(bindings, printWriter, request.getResource(), requestDispatcherOptions);
             }
         }
         ExtensionUtils.setRequestAttributes(request, originalAttributes);
         return writer.toString();
     }
 
-    private RequestDispatcherOptions handleSelectors(SlingHttpServletRequest request, Set<String> selectors, Map<String, Object> options,
-                                                RuntimeObjectModel runtimeObjectModel) {
+    private RequestDispatcherOptions handleDispatcherOptions(SlingHttpServletRequest request, Set<String> selectors, Map<String, Object> options,
+                                                             RuntimeObjectModel runtimeObjectModel) {
         RequestDispatcherOptions requestDispatcherOptions = new RequestDispatcherOptions();
         if (selectors.isEmpty()) {
             selectors.addAll(Arrays.asList(request.getRequestPathInfo().getSelectors()));
@@ -157,6 +155,12 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
             } else {
                 requestDispatcherOptions.setAddSelectors(getSelectorString(selectors));
                 requestDispatcherOptions.setReplaceSelectors("");
+            }
+        }
+        if (options.containsKey(OPTION_RESOURCE_TYPE)) {
+            String resourceType = runtimeObjectModel.toString(getAndRemoveOption(options, OPTION_RESOURCE_TYPE));
+            if (StringUtils.isNotEmpty(resourceType)) {
+                requestDispatcherOptions.setForceResourceType(resourceType);
             }
         }
         return requestDispatcherOptions;
@@ -232,28 +236,29 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
         return StringUtils.isNotEmpty(selectorString) ? selectorString : null;
     }
 
-    private void includeResource(final Bindings bindings, PrintWriter out, String path, RequestDispatcherOptions requestDispatcherOptions, String resourceType) {
+    private void includeResource(final Bindings bindings, PrintWriter out, String path, RequestDispatcherOptions requestDispatcherOptions) {
         if (StringUtils.isEmpty(path)) {
             throw new SightlyException("Resource path cannot be empty");
         } else {
             SlingHttpServletRequest request = BindingsUtils.getRequest(bindings);
             Resource includeRes = request.getResourceResolver().resolve(path);
             if (ResourceUtil.isNonExistingResource(includeRes)) {
+                String resourceType = request.getResource().getResourceType();
+                if (requestDispatcherOptions.containsKey(RequestDispatcherOptions.OPT_FORCE_RESOURCE_TYPE)) {
+                    resourceType = requestDispatcherOptions.getForceResourceType();
+                }
                 includeRes = new SyntheticResource(request.getResourceResolver(), path, resourceType);
             }
-            includeResource(bindings, out, includeRes, requestDispatcherOptions, resourceType);
+            includeResource(bindings, out, includeRes, requestDispatcherOptions);
         }
     }
 
-    private void includeResource(final Bindings bindings, PrintWriter out, Resource includeRes, RequestDispatcherOptions requestDispatcherOptions, String resourceType) {
+    private void includeResource(final Bindings bindings, PrintWriter out, Resource includeRes, RequestDispatcherOptions requestDispatcherOptions) {
         if (includeRes == null) {
             throw new SightlyException("Resource cannot be null");
         } else {
             SlingHttpServletResponse customResponse = new PrintWriterResponseWrapper(out, BindingsUtils.getResponse(bindings));
             SlingHttpServletRequest request = BindingsUtils.getRequest(bindings);
-            if (StringUtils.isNotEmpty(resourceType)) {
-                requestDispatcherOptions.setForceResourceType(resourceType);
-            }
             RequestDispatcher dispatcher = request.getRequestDispatcher(includeRes, requestDispatcherOptions);
             try {
                 if (dispatcher != null) {
