@@ -50,7 +50,7 @@ public class XSSRuntimeExtension implements RuntimeExtension {
 
     private static final Set<String> elementNameWhiteList = new HashSet<>();
     private static final Logger LOG = LoggerFactory.getLogger(XSSRuntimeExtension.class);
-    private static final Pattern VALID_ATTRIBUTE = Pattern.compile("^[a-zA-Z_:][\\-a-zA-Z0-9_:\\.]*$");
+    private static final Pattern VALID_ATTRIBUTE = Pattern.compile("^[a-zA-Z_:][\\-a-zA-Z0-9_:.]*$");
     private static final Pattern ATTRIBUTE_BLACKLIST = Pattern.compile("^(style|(on.*))$", Pattern.CASE_INSENSITIVE);
 
     @Override
@@ -66,7 +66,7 @@ public class XSSRuntimeExtension implements RuntimeExtension {
             hint = arguments[2];
         }
         MarkupContext markupContext = null;
-        if (option != null && option instanceof String) {
+        if (option instanceof String) {
             String name = (String) option;
             markupContext = MarkupContext.lookup(name);
         }
@@ -100,10 +100,23 @@ public class XSSRuntimeExtension implements RuntimeExtension {
             case ATTRIBUTE_NAME:
                 return escapeAttributeName(text);
             case NUMBER:
-                Long result = xssApi.getValidLong(text, 0);
-                if (result != null) {
-                    return result.toString();
+                Number result = 0;
+                if (text != null) {
+                    if (text.contains(".") || text.contains("e") || text.contains("E")) {
+                        try {
+                            result = Double.parseDouble(text);
+                        } catch (NumberFormatException doubleParseError) {
+                            result = 0;
+                        }
+                    } else {
+                        try {
+                            result = Long.parseLong(text);
+                        } catch (NumberFormatException longParseError) {
+                            result = 0;
+                        }
+                    }
                 }
+                return result.toString();
             case URI:
                 return xssApi.getValidHref(text);
             case SCRIPT_TOKEN:
@@ -145,14 +158,10 @@ public class XSSRuntimeExtension implements RuntimeExtension {
             return null;
         }
         attributeName = attributeName.trim();
-        if (matchPattern(VALID_ATTRIBUTE, attributeName) && !isSensitiveAttribute(attributeName)) {
+        if (VALID_ATTRIBUTE.matcher(attributeName).matches() && !isSensitiveAttribute(attributeName)) {
             return attributeName;
         }
         return null;
-    }
-
-    private boolean matchPattern(Pattern pattern, String str) {
-        return pattern.matcher(str).matches();
     }
 
     static {
