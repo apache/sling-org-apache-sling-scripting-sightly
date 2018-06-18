@@ -43,6 +43,8 @@ import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
 import org.osgi.service.component.annotations.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Runtime support for including resources in a HTL script through {@code data-sly-resource}.
@@ -54,6 +56,8 @@ import org.osgi.service.component.annotations.Component;
         }
 )
 public class ResourceRuntimeExtension implements RuntimeExtension {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ResourceRuntimeExtension.class);
 
     private static final String OPTION_RESOURCE_TYPE = "resourceType";
     private static final String OPTION_PATH = "path";
@@ -81,7 +85,7 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
         if (pathObj instanceof Resource) {
             Resource includedResource = (Resource) pathObj;
             RequestDispatcherOptions requestDispatcherOptions = handleDispatcherOptions(request, new LinkedHashSet<String>(), opts, runtimeObjectModel);
-            includeResource(bindings, printWriter, includedResource, requestDispatcherOptions);
+            includeResource(request, bindings, printWriter, includedResource, requestDispatcherOptions);
         } else {
             String includePath = runtimeObjectModel.toString(pathObj);
             // build path completely
@@ -93,17 +97,17 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
                 if (includedResource != null) {
                     RequestDispatcherOptions requestDispatcherOptions =
                             handleDispatcherOptions(request, new LinkedHashSet<String>(), opts, runtimeObjectModel);
-                    includeResource(bindings, printWriter, includedResource, requestDispatcherOptions);
+                    includeResource(request, bindings, printWriter, includedResource, requestDispatcherOptions);
                 } else {
                     // analyse path and decompose potential selectors from the path
                     pathInfo = new PathInfo(includePath);
                     RequestDispatcherOptions requestDispatcherOptions = handleDispatcherOptions(request, pathInfo.selectors, opts, runtimeObjectModel);
-                    includeResource(bindings, printWriter, pathInfo.path, requestDispatcherOptions);
+                    includeResource(request, bindings, printWriter, pathInfo.path, requestDispatcherOptions);
                 }
             } else {
                 // use the current resource
                 RequestDispatcherOptions requestDispatcherOptions = handleDispatcherOptions(request, new LinkedHashSet<String>(), opts, runtimeObjectModel);
-                includeResource(bindings, printWriter, request.getResource(), requestDispatcherOptions);
+                includeResource(request, bindings, printWriter, request.getResource(), requestDispatcherOptions);
             }
         }
         ExtensionUtils.setRequestAttributes(request, originalAttributes);
@@ -236,11 +240,11 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
         return StringUtils.isNotEmpty(selectorString) ? selectorString : null;
     }
 
-    private void includeResource(final Bindings bindings, PrintWriter out, String path, RequestDispatcherOptions requestDispatcherOptions) {
+    private void includeResource(SlingHttpServletRequest request, final Bindings bindings, PrintWriter out, String path,
+                                 RequestDispatcherOptions requestDispatcherOptions) {
         if (StringUtils.isEmpty(path)) {
             throw new SightlyException("Resource path cannot be empty");
         } else {
-            SlingHttpServletRequest request = BindingsUtils.getRequest(bindings);
             Resource includeRes = request.getResourceResolver().resolve(path);
             if (ResourceUtil.isNonExistingResource(includeRes)) {
                 String resourceType = request.getResource().getResourceType();
@@ -249,16 +253,28 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
                 }
                 includeRes = new SyntheticResource(request.getResourceResolver(), path, resourceType);
             }
-            includeResource(bindings, out, includeRes, requestDispatcherOptions);
+            includeResource(request, bindings, out, includeRes, requestDispatcherOptions);
         }
     }
 
-    private void includeResource(final Bindings bindings, PrintWriter out, Resource includeRes, RequestDispatcherOptions requestDispatcherOptions) {
+    private void includeResource(SlingHttpServletRequest request, final Bindings bindings, PrintWriter out, Resource includeRes,
+                                 RequestDispatcherOptions requestDispatcherOptions) {
         if (includeRes == null) {
             throw new SightlyException("Resource cannot be null");
         } else {
+            if (request.getResource().getPath().equals(includeRes.getPath())) {
+                String requestSelectorString = request.getRequestPathInfo().getSelectorString();
+                String requestDispatcherAddSelectors = requestDispatcherOptions.getAddSelectors();
+                if (
+                        (requestSelectorString == null ? requestDispatcherAddSelectors == null : requestSelectorString.equals(requestDispatcherAddSelectors)) &&
+                        StringUtils.EMPTY.equals(requestDispatcherOptions.getReplaceSelectors()) &&
+                        (requestDispatcherOptions.getForceResourceType() == null || requestDispatcherOptions.getForceResourceType().equals(request.getResource().getResourceType()))
+                ) {
+                    LOGGER.warn("Will not include resource {} since this will lead to a {} exception.", includeRes.getPath(), "org.apache.sling.api.request.RecursionTooDeepException");
+                    return;
+                }
+            }
             SlingHttpServletResponse customResponse = new PrintWriterResponseWrapper(out, BindingsUtils.getResponse(bindings));
-            SlingHttpServletRequest request = BindingsUtils.getRequest(bindings);
             RequestDispatcher dispatcher = request.getRequestDispatcher(includeRes, requestDispatcherOptions);
             try {
                 if (dispatcher != null) {
