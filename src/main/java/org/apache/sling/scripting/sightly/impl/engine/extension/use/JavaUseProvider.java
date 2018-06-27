@@ -18,6 +18,7 @@
  ******************************************************************************/
 package org.apache.sling.scripting.sightly.impl.engine.extension.use;
 
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -114,6 +115,9 @@ public class JavaUseProvider implements UseProvider {
                 }
                 if (result != null) {
                     return ProviderOutcome.success(result);
+                } else if(cls.isInterface() || Modifier.isAbstract(cls.getModifiers())){
+                    LOG.debug("Wont attempt to instantiate an interface or abstract class {}",cls.getName());
+                    return ProviderOutcome.failure();
                 } else {
                     /*
                      * the object was cached by the class loader but it's not adaptable from {@link Resource} or {@link
