@@ -21,12 +21,11 @@ package org.apache.sling.scripting.sightly.impl.engine;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Nonnull;
-
 import org.apache.sling.api.resource.observation.ExternalResourceChangeListener;
 import org.apache.sling.api.resource.observation.ResourceChange;
 import org.apache.sling.api.resource.observation.ResourceChangeListener;
 import org.apache.sling.scripting.sightly.SightlyException;
+import org.jetbrains.annotations.NotNull;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +72,7 @@ public class ResourceBackedPojoChangeMonitor implements ResourceChangeListener, 
     }
 
     @Override
-    public void onChange(@Nonnull List<ResourceChange> changes) {
+    public void onChange(@NotNull List<ResourceChange> changes) {
         for (ResourceChange change : changes) {
             String path = change.getPath();
             ResourceChange.ChangeType changeType = change.getType();

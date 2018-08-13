@@ -19,12 +19,11 @@
 package org.apache.sling.scripting.sightly.impl.engine.runtime;
 
 import java.util.HashMap;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-
 import org.apache.sling.api.adapter.Adaptable;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.api.wrappers.ValueMapDecorator;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -68,9 +67,9 @@ public class SlingRuntimeObjectModelTest {
             }});
         }
 
-        @CheckForNull
+        @Nullable
         @Override
-        public <AdapterType> AdapterType adaptTo(@Nonnull Class<AdapterType> aClass) {
+        public <AdapterType> AdapterType adaptTo(@NotNull Class<AdapterType> aClass) {
             if (aClass == ValueMap.class) {
                 return (AdapterType) getValueMap();
             }
