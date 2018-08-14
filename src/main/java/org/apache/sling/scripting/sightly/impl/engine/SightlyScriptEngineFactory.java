@@ -21,9 +21,6 @@ package org.apache.sling.scripting.sightly.impl.engine;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
@@ -35,7 +32,6 @@ import org.apache.sling.commons.classloader.DynamicClassLoaderManager;
 import org.apache.sling.scripting.api.AbstractScriptEngineFactory;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
 import org.apache.sling.scripting.sightly.compiler.SightlyCompiler;
-import org.apache.sling.scripting.sightly.java.compiler.JavaEscapeUtils;
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -79,14 +75,12 @@ public class SightlyScriptEngineFactory extends AbstractScriptEngineFactory {
     private ScriptingResourceResolverProvider scriptingResourceResolverProvider;
 
     public final static String SHORT_NAME = "sightly";
-
-    public final static String LANGUAGE_NAME = "The HTL Templating Language";
-
-    public final static String LANGUAGE_VERSION = "1.3";
-
     public final static String EXTENSION = "html";
 
-    public static final String SIGHTLY_CONFIG_FILE = "/sightly.config";
+    private final static String LANGUAGE_NAME = "The HTL Templating Language";
+    private final static String LANGUAGE_VERSION = "1.3";
+
+    static final String SIGHTLY_CONFIG_FILE = "/sightly.config";
 
     public SightlyScriptEngineFactory() {
         setNames("htl", "HTL", SHORT_NAME);
@@ -108,7 +102,7 @@ public class SightlyScriptEngineFactory extends AbstractScriptEngineFactory {
         return new SightlyScriptEngine(this, sightlyCompiler, sightlyJavaCompilerService, sightlyEngineConfiguration, scriptingResourceResolverProvider);
     }
 
-    protected ClassLoader getClassLoader() {
+    ClassLoader getClassLoader() {
         return dynamicClassLoaderManager.getDynamicClassLoader();
     }
 

@@ -21,6 +21,7 @@ package org.apache.sling.scripting.sightly.impl.engine;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Set;
+
 import javax.script.Bindings;
 import javax.script.Compilable;
 import javax.script.CompiledScript;
@@ -30,8 +31,8 @@ import javax.script.ScriptEngineFactory;
 import javax.script.ScriptException;
 
 import org.apache.sling.api.SlingHttpServletRequest;
-import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.scripting.SlingBindings;
+import org.apache.sling.api.scripting.SlingScriptConstants;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.scripting.api.AbstractSlingScriptEngine;
 import org.apache.sling.scripting.api.ScriptNameAware;
@@ -57,8 +58,7 @@ import org.slf4j.LoggerFactory;
 public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Compilable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SightlyScriptEngine.class);
-
-    public static final String NO_SCRIPT = "NO_SCRIPT";
+    private static final String NO_SCRIPT = "NO_SCRIPT";
 
     private SightlyCompiler sightlyCompiler;
     private SightlyJavaCompilerService javaCompilerService;
@@ -66,7 +66,7 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
     private final ScriptingResourceResolverProvider scriptingResourceResolverProvider;
     private final SlingJavaImportsAnalyser importsAnalyser;
 
-    public SightlyScriptEngine(ScriptEngineFactory scriptEngineFactory,
+    SightlyScriptEngine(ScriptEngineFactory scriptEngineFactory,
                                SightlyCompiler sightlyCompiler,
                                SightlyJavaCompilerService javaCompilerService,
                                SightlyEngineConfiguration configuration,
@@ -134,27 +134,40 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
                     return script;
                 }
             };
-            JavaClassBackendCompiler javaClassBackendCompiler = new JavaClassBackendCompiler(importsAnalyser);
-            GlobalShadowCheckBackendCompiler shadowCheckBackendCompiler = null;
+            Object renderUnit = null;
             if (scriptContext != null) {
-                Bindings bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
-                Set<String> globals = bindings.keySet();
-                shadowCheckBackendCompiler = new GlobalShadowCheckBackendCompiler(javaClassBackendCompiler, globals);
+                renderUnit = scriptContext.getAttribute("precompiled.unit", SlingScriptConstants.SLING_SCOPE);
             }
-            CompilationResult result = shadowCheckBackendCompiler == null ? sightlyCompiler.compile(compilationUnit,
-                    javaClassBackendCompiler) : sightlyCompiler.compile(compilationUnit, shadowCheckBackendCompiler);
-            if (result.getWarnings().size() > 0) {
-                for (CompilerMessage warning : result.getWarnings()) {
-                    LOGGER.warn("Script {} {}:{}: {}", warning.getScriptName(), warning.getLine(), warning.getColumn(), warning.getMessage());
+            if (renderUnit instanceof Class) {
+                try {
+                    renderUnit = ((Class) renderUnit).getDeclaredConstructor().newInstance();
+                } catch (Exception e) {
+                    throw new ScriptException(e);
                 }
+            } else {
+                JavaClassBackendCompiler javaClassBackendCompiler = new JavaClassBackendCompiler(importsAnalyser);
+                GlobalShadowCheckBackendCompiler shadowCheckBackendCompiler = null;
+                if (scriptContext != null) {
+                    Bindings bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
+                    Set<String> globals = bindings.keySet();
+                    shadowCheckBackendCompiler = new GlobalShadowCheckBackendCompiler(javaClassBackendCompiler, globals);
+                }
+                CompilationResult result = shadowCheckBackendCompiler == null ? sightlyCompiler.compile(compilationUnit,
+                        javaClassBackendCompiler) : sightlyCompiler.compile(compilationUnit, shadowCheckBackendCompiler);
+                if (result.getWarnings().size() > 0) {
+                    for (CompilerMessage warning : result.getWarnings()) {
+                        LOGGER.warn("Script {} {}:{}: {}", warning.getScriptName(), warning.getLine(), warning.getColumn(),
+                                warning.getMessage());
+                    }
+                }
+                if (result.getErrors().size() > 0) {
+                    CompilerMessage error = result.getErrors().get(0);
+                    throw new ScriptException(error.getMessage(), error.getScriptName(), error.getLine(), error.getColumn());
+                }
+                SourceIdentifier sourceIdentifier = new SourceIdentifier(configuration, scriptName);
+                String javaSourceCode = javaClassBackendCompiler.build(sourceIdentifier);
+                renderUnit = javaCompilerService.compileSource(sourceIdentifier, javaSourceCode);
             }
-            if (result.getErrors().size() > 0) {
-                CompilerMessage error = result.getErrors().get(0);
-                throw new ScriptException(error.getMessage(), error.getScriptName(), error.getLine(), error.getColumn());
-            }
-            SourceIdentifier sourceIdentifier = new SourceIdentifier(configuration, scriptName);
-            String javaSourceCode = javaClassBackendCompiler.build(sourceIdentifier);
-            Object renderUnit = javaCompilerService.compileSource(sourceIdentifier, javaSourceCode);
             if (renderUnit instanceof RenderUnit) {
                 return new SightlyCompiledScript(this, (RenderUnit) renderUnit);
             } else {

@@ -15,6 +15,7 @@
  * limitations under the License.
  ******************************************************************************/
 package org.apache.sling.scripting.sightly.impl.engine;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
