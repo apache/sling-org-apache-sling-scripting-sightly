@@ -138,13 +138,7 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
             if (scriptContext != null) {
                 renderUnit = scriptContext.getAttribute("precompiled.unit", SlingScriptConstants.SLING_SCOPE);
             }
-            if (renderUnit instanceof Class) {
-                try {
-                    renderUnit = ((Class) renderUnit).getDeclaredConstructor().newInstance();
-                } catch (Exception e) {
-                    throw new ScriptException(e);
-                }
-            } else {
+            if (renderUnit == null) {
                 JavaClassBackendCompiler javaClassBackendCompiler = new JavaClassBackendCompiler(importsAnalyser);
                 GlobalShadowCheckBackendCompiler shadowCheckBackendCompiler = null;
                 if (scriptContext != null) {
