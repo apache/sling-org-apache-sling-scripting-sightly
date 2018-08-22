@@ -45,7 +45,7 @@ public class SightlyCompiledScript extends CompiledScript {
     }
 
     @Override
-    public Object eval(ScriptContext context) throws ScriptException {
+    public Object eval(ScriptContext context) {
         Bindings bindings = context.getBindings(ScriptContext.ENGINE_SCOPE);
         SlingBindings slingBindings = new SlingBindings();
         slingBindings.putAll(bindings);

@@ -92,22 +92,17 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
     @Override
     public Object eval(Reader reader, ScriptContext scriptContext) throws ScriptException {
         checkArguments(reader, scriptContext);
-        Bindings bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
-        SlingBindings slingBindings = new SlingBindings();
-        slingBindings.putAll(bindings);
-        final SlingHttpServletRequest request = slingBindings.getRequest();
-        if (request == null) {
-            throw new SightlyException("Missing SlingHttpServletRequest from ScriptContext.");
-        }
-        final Object oldValue = request.getAttribute(SlingBindings.class.getName());
         try {
-            request.setAttribute(SlingBindings.class.getName(), slingBindings);
-            SightlyCompiledScript compiledScript = internalCompile(reader, scriptContext);
+            Object renderUnit = scriptContext.getAttribute("precompiled.unit", SlingScriptConstants.SLING_SCOPE);
+            SightlyCompiledScript compiledScript;
+            if (renderUnit instanceof RenderUnit) {
+                compiledScript = new SightlyCompiledScript(this, (RenderUnit) renderUnit);
+            } else {
+                compiledScript = internalCompile(reader, scriptContext);
+            }
             return compiledScript.eval(scriptContext);
         } catch (Exception e) {
             throw new ScriptException(e);
-        } finally {
-            request.setAttribute(SlingBindings.class.getName(), oldValue);
         }
     }
 
@@ -134,34 +129,27 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
                     return script;
                 }
             };
-            Object renderUnit = null;
+            JavaClassBackendCompiler javaClassBackendCompiler = new JavaClassBackendCompiler(importsAnalyser);
+            GlobalShadowCheckBackendCompiler shadowCheckBackendCompiler = null;
             if (scriptContext != null) {
-                renderUnit = scriptContext.getAttribute("precompiled.unit", SlingScriptConstants.SLING_SCOPE);
+                Bindings bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
+                Set<String> globals = bindings.keySet();
+                shadowCheckBackendCompiler = new GlobalShadowCheckBackendCompiler(javaClassBackendCompiler, globals);
             }
-            if (renderUnit == null) {
-                JavaClassBackendCompiler javaClassBackendCompiler = new JavaClassBackendCompiler(importsAnalyser);
-                GlobalShadowCheckBackendCompiler shadowCheckBackendCompiler = null;
-                if (scriptContext != null) {
-                    Bindings bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
-                    Set<String> globals = bindings.keySet();
-                    shadowCheckBackendCompiler = new GlobalShadowCheckBackendCompiler(javaClassBackendCompiler, globals);
+            CompilationResult result = shadowCheckBackendCompiler == null ? sightlyCompiler.compile(compilationUnit,
+                    javaClassBackendCompiler) : sightlyCompiler.compile(compilationUnit, shadowCheckBackendCompiler);
+            if (result.getWarnings().size() > 0) {
+                for (CompilerMessage warning : result.getWarnings()) {
+                    LOGGER.warn("Script {} {}:{}: {}", warning.getScriptName(), warning.getLine(), warning.getColumn(), warning.getMessage());
                 }
-                CompilationResult result = shadowCheckBackendCompiler == null ? sightlyCompiler.compile(compilationUnit,
-                        javaClassBackendCompiler) : sightlyCompiler.compile(compilationUnit, shadowCheckBackendCompiler);
-                if (result.getWarnings().size() > 0) {
-                    for (CompilerMessage warning : result.getWarnings()) {
-                        LOGGER.warn("Script {} {}:{}: {}", warning.getScriptName(), warning.getLine(), warning.getColumn(),
-                                warning.getMessage());
-                    }
-                }
-                if (result.getErrors().size() > 0) {
-                    CompilerMessage error = result.getErrors().get(0);
-                    throw new ScriptException(error.getMessage(), error.getScriptName(), error.getLine(), error.getColumn());
-                }
-                SourceIdentifier sourceIdentifier = new SourceIdentifier(configuration, scriptName);
-                String javaSourceCode = javaClassBackendCompiler.build(sourceIdentifier);
-                renderUnit = javaCompilerService.compileSource(sourceIdentifier, javaSourceCode);
             }
+            if (result.getErrors().size() > 0) {
+                CompilerMessage error = result.getErrors().get(0);
+                throw new ScriptException(error.getMessage(), error.getScriptName(), error.getLine(), error.getColumn());
+            }
+            SourceIdentifier sourceIdentifier = new SourceIdentifier(configuration, scriptName);
+            String javaSourceCode = javaClassBackendCompiler.build(sourceIdentifier);
+            Object renderUnit = javaCompilerService.compileSource(sourceIdentifier, javaSourceCode);
             if (renderUnit instanceof RenderUnit) {
                 return new SightlyCompiledScript(this, (RenderUnit) renderUnit);
             } else {
