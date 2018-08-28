@@ -21,6 +21,7 @@ package org.apache.sling.scripting.sightly.impl.engine;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Set;
+
 import javax.script.Bindings;
 import javax.script.Compilable;
 import javax.script.CompiledScript;
@@ -29,9 +30,6 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
 import javax.script.ScriptException;
 
-import org.apache.sling.api.SlingHttpServletRequest;
-import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.scripting.api.AbstractSlingScriptEngine;
 import org.apache.sling.scripting.api.ScriptNameAware;
@@ -92,22 +90,11 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
     @Override
     public Object eval(Reader reader, ScriptContext scriptContext) throws ScriptException {
         checkArguments(reader, scriptContext);
-        Bindings bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
-        SlingBindings slingBindings = new SlingBindings();
-        slingBindings.putAll(bindings);
-        final SlingHttpServletRequest request = slingBindings.getRequest();
-        if (request == null) {
-            throw new SightlyException("Missing SlingHttpServletRequest from ScriptContext.");
-        }
-        final Object oldValue = request.getAttribute(SlingBindings.class.getName());
         try {
-            request.setAttribute(SlingBindings.class.getName(), slingBindings);
             SightlyCompiledScript compiledScript = internalCompile(reader, scriptContext);
             return compiledScript.eval(scriptContext);
         } catch (Exception e) {
             throw new ScriptException(e);
-        } finally {
-            request.setAttribute(SlingBindings.class.getName(), oldValue);
         }
     }
 
