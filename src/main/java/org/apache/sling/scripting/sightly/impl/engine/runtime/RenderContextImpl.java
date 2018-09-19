@@ -22,6 +22,7 @@ import java.util.Map;
 import javax.script.Bindings;
 import javax.script.ScriptContext;
 
+import org.apache.sling.api.scripting.SlingScriptConstants;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.impl.engine.ExtensionRegistryService;
@@ -42,6 +43,11 @@ public class RenderContextImpl implements RenderContext {
 
     public RenderContextImpl(ScriptContext scriptContext) {
         bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
+        ClassLoader classLoader = (ClassLoader) scriptContext.getAttribute("precompiled.bundle.classloader",
+                SlingScriptConstants.SLING_SCOPE);
+        if (classLoader != null) {
+            bindings.put("org.apache.sling.scripting.sightly.render_unit.loader", classLoader);
+        }
         extensionRegistryService = BindingsUtils.getHelper(bindings).getService(ExtensionRegistryService.class);
     }
 

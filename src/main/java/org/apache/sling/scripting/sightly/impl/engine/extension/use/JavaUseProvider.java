@@ -93,7 +93,11 @@ public class JavaUseProvider implements UseProvider {
                 return ProviderOutcome.success(result);
             } else {
                 LOG.debug("Attempting to load class {} from the classloader cache.", identifier);
-                Class<?> cls = classLoaderWriter.getClassLoader().loadClass(identifier);
+                ClassLoader classLoader = (ClassLoader) renderContext.getBindings().get("org.apache.sling.scripting.sightly.render_unit.loader");
+                if (classLoader == null) {
+                    classLoader = classLoaderWriter.getClassLoader();
+                }
+                Class<?> cls = classLoader.loadClass(identifier);
                 // attempt OSGi service load
                 result = sling.getService(cls);
                 if (result != null) {
