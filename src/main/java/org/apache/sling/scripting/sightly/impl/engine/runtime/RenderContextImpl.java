@@ -30,6 +30,8 @@ import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.render.AbstractRuntimeObjectModel;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.wiring.BundleWiring;
 
 /**
  * Rendering context for HTL rendering units.
@@ -43,10 +45,10 @@ public class RenderContextImpl implements RenderContext {
 
     public RenderContextImpl(ScriptContext scriptContext) {
         bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
-        ClassLoader classLoader = (ClassLoader) scriptContext.getAttribute("precompiled.bundle.classloader",
+        Bundle scriptProvidingBundle = (Bundle) scriptContext.getAttribute("org.apache.sling.scripting.resolver.provider.bundle",
                 SlingScriptConstants.SLING_SCOPE);
-        if (classLoader != null) {
-            bindings.put("org.apache.sling.scripting.sightly.render_unit.loader", classLoader);
+        if (scriptProvidingBundle != null) {
+            bindings.put("org.apache.sling.scripting.sightly.render_unit.loader", scriptProvidingBundle.adapt(BundleWiring.class).getClassLoader());
         }
         extensionRegistryService = BindingsUtils.getHelper(bindings).getService(ExtensionRegistryService.class);
     }
