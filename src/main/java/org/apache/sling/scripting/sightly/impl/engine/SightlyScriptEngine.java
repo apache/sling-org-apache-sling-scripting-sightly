@@ -30,13 +30,11 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
 import javax.script.ScriptException;
 
-import org.apache.sling.api.SlingHttpServletRequest;
-import org.apache.sling.api.scripting.SlingBindings;
-import org.apache.sling.api.scripting.SlingScriptConstants;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.scripting.api.AbstractSlingScriptEngine;
 import org.apache.sling.scripting.api.ScriptNameAware;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
+import org.apache.sling.scripting.resolver.BundledRenderUnit;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.compiler.CompilationResult;
 import org.apache.sling.scripting.sightly.compiler.CompilationUnit;
@@ -93,8 +91,14 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
     public Object eval(Reader reader, ScriptContext scriptContext) throws ScriptException {
         checkArguments(reader, scriptContext);
         try {
-            Object renderUnit = scriptContext.getAttribute("precompiled.unit", SlingScriptConstants.SLING_SCOPE);
             SightlyCompiledScript compiledScript;
+            Bindings bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
+            Object bundledRenderUnit = bindings.get(BundledRenderUnit.VARIABLE);
+            Object renderUnit = null;
+            if (bundledRenderUnit instanceof BundledRenderUnit) {
+                renderUnit = ((BundledRenderUnit) bundledRenderUnit).getUnit();
+            }
+
             if (renderUnit instanceof RenderUnit) {
                 compiledScript = new SightlyCompiledScript(this, (RenderUnit) renderUnit);
             } else {

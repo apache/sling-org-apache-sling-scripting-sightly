@@ -20,7 +20,7 @@ package org.apache.sling.scripting.sightly.impl.engine.extension.use;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
+
 import javax.script.Bindings;
 import javax.servlet.ServletRequest;
 
@@ -29,6 +29,7 @@ import org.apache.sling.api.adapter.Adaptable;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.commons.classloader.ClassLoaderWriter;
+import org.apache.sling.scripting.resolver.BundledRenderUnit;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyJavaCompilerService;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.impl.utils.Patterns;
@@ -37,6 +38,7 @@ import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.use.ProviderOutcome;
 import org.apache.sling.scripting.sightly.use.UseProvider;
 import org.osgi.framework.Constants;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
@@ -93,18 +95,27 @@ public class JavaUseProvider implements UseProvider {
                 return ProviderOutcome.success(result);
             } else {
                 LOG.debug("Attempting to load class {} from the classloader cache.", identifier);
-                ClassLoader classLoader = (ClassLoader) renderContext.getBindings().get("org.apache.sling.scripting.sightly.render_unit.loader");
-                if (classLoader == null) {
+                BundledRenderUnit bundledRenderUnit = null;
+                ClassLoader classLoader;
+                Object bru = globalBindings.get(BundledRenderUnit.VARIABLE);
+                if (bru instanceof BundledRenderUnit) {
+                    bundledRenderUnit = (BundledRenderUnit) bru;
+                    classLoader = bundledRenderUnit.getBundle().adapt(BundleWiring.class).getClassLoader();
+                } else {
                     classLoader = classLoaderWriter.getClassLoader();
                 }
                 Class<?> cls = classLoader.loadClass(identifier);
                 // attempt OSGi service load
-                result = sling.getService(cls);
+                if (bundledRenderUnit != null) {
+                    result = bundledRenderUnit.getService(identifier);
+                } else {
+                    result = sling.getService(cls);
+                }
                 if (result != null) {
                     return ProviderOutcome.success(result);
                 }
                 Object adaptableCandidate = arguments.get(ADAPTABLE);
-                if (adaptableCandidate != null && adaptableCandidate instanceof Adaptable) {
+                if (adaptableCandidate instanceof Adaptable) {
                     Adaptable adaptable = (Adaptable) adaptableCandidate;
                     result = adaptable.adaptTo(cls);
                     if (result != null) {
