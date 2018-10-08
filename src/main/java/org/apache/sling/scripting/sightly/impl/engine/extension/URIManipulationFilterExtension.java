@@ -32,8 +32,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nonnull;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.request.RequestPathInfo;
 import org.apache.sling.api.resource.Resource;
@@ -42,6 +40,7 @@ import org.apache.sling.scripting.sightly.compiler.RuntimeFunction;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
+import org.jetbrains.annotations.NotNull;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -461,7 +460,7 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
         }
 
         @Override
-        @Nonnull
+        @NotNull
         public String getResourcePath() {
             return resourcePath;
         }
@@ -502,7 +501,7 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
         }
 
         @Override
-        @Nonnull
+        @NotNull
         public String[] getSelectors() {
             return selectors.toArray(new String[]{});
         }

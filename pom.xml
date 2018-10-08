@@ -37,7 +37,7 @@
         The versioning scheme defined here corresponds to SLING-7406 (<module_version>-<htl_specification_version>). Take care when
         releasing to only increase the first part, unless the module provides support for a newer version of the HTL specification.
     -->
-    <version>1.0.55-1.4.0-exp-SNAPSHOT</version>
+    <version>1.0.57-1.4.0-exp-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
     <name>Apache Sling Scripting HTL Engine</name>
@@ -172,13 +172,13 @@
         <dependency>
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.scripting.sightly.compiler</artifactId>
-            <version>1.0.23-1.4.0-SNAPSHOT</version>
+            <version>1.0.22-1.4.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.scripting.sightly.compiler.java</artifactId>
-            <version>1.0.25-1.4.0-SNAPSHOT</version>
+            <version>1.0.26-1.4.0</version>
             <scope>provided</scope>
         </dependency>
 
@@ -280,9 +280,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-            <version>3.0.0</version>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>16.0.2</version>
             <scope>provided</scope>
         </dependency>
 
