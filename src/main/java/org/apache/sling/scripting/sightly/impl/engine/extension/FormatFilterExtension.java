@@ -33,7 +33,6 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.scripting.sightly.SightlyException;
-import org.apache.sling.scripting.sightly.compiler.RuntimeFunction;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
@@ -42,7 +41,7 @@ import org.osgi.service.component.annotations.Component;
 @Component(
         service = RuntimeExtension.class,
         property = {
-                RuntimeExtension.NAME + "=" + RuntimeFunction.FORMAT
+                RuntimeExtension.NAME + "=" + RuntimeExtension.FORMAT
         }
 )
 public class FormatFilterExtension implements RuntimeExtension {
@@ -60,7 +59,7 @@ public class FormatFilterExtension implements RuntimeExtension {
 
     @Override
     public Object call(final RenderContext renderContext, Object... arguments) {
-        ExtensionUtils.checkArgumentCount(RuntimeFunction.FORMAT, arguments, 2);
+        ExtensionUtils.checkArgumentCount(RuntimeExtension.FORMAT, arguments, 2);
         RuntimeObjectModel runtimeObjectModel = renderContext.getObjectModel();
         String source = runtimeObjectModel.toString(arguments[0]);
         Map<String, Object> options = (Map<String, Object>) arguments[1];

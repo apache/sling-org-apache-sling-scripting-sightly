@@ -31,7 +31,6 @@ import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.api.servlets.ServletResolver;
 import org.apache.sling.scripting.sightly.SightlyException;
-import org.apache.sling.scripting.sightly.compiler.RuntimeFunction;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.render.RenderContext;
@@ -46,7 +45,7 @@ import org.slf4j.LoggerFactory;
 @Component(
         service = RuntimeExtension.class,
         property = {
-                RuntimeExtension.NAME + "=" + RuntimeFunction.INCLUDE
+                RuntimeExtension.NAME + "=" + RuntimeExtension.INCLUDE
         }
 )
 public class IncludeRuntimeExtension implements RuntimeExtension {
@@ -60,7 +59,7 @@ public class IncludeRuntimeExtension implements RuntimeExtension {
 
     @Override
     public Object call(final RenderContext renderContext, Object... arguments) {
-        ExtensionUtils.checkArgumentCount(RuntimeFunction.INCLUDE, arguments, 2);
+        ExtensionUtils.checkArgumentCount(RuntimeExtension.INCLUDE, arguments, 2);
         RuntimeObjectModel runtimeObjectModel = renderContext.getObjectModel();
         String originalPath = runtimeObjectModel.toString(arguments[0]);
         Map options = (Map) arguments[1];

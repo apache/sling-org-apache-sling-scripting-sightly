@@ -21,7 +21,7 @@ package org.apache.sling.scripting.sightly.impl.engine.extension.use;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
+
 import javax.script.Bindings;
 import javax.servlet.ServletRequest;
 
@@ -29,8 +29,7 @@ import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.adapter.Adaptable;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.scripting.SlingScriptHelper;
-import org.apache.sling.commons.classloader.ClassLoaderWriter;
-import org.apache.sling.scripting.sightly.impl.engine.SightlyJavaCompilerService;
+import org.apache.sling.scripting.sightly.impl.engine.compiled.SlingHTLMasterCompiler;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.impl.utils.Patterns;
 import org.apache.sling.scripting.sightly.pojo.Use;
@@ -40,6 +39,8 @@ import org.apache.sling.scripting.sightly.use.UseProvider;
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,14 +65,11 @@ public class JavaUseProvider implements UseProvider {
 
     }
 
-    public static final String ADAPTABLE = "adaptable";
+    private static final String ADAPTABLE = "adaptable";
     private static final Logger LOG = LoggerFactory.getLogger(JavaUseProvider.class);
 
-    @Reference
-    private SightlyJavaCompilerService sightlyJavaCompilerService = null;
-
-    @Reference
-    private ClassLoaderWriter classLoaderWriter = null;
+    @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY)
+    private SlingHTLMasterCompiler slingHTLMasterCompiler;
 
     @Override
     public ProviderOutcome provide(String identifier, RenderContext renderContext, Bindings arguments) {
@@ -84,9 +82,11 @@ public class JavaUseProvider implements UseProvider {
         SlingHttpServletRequest request = BindingsUtils.getRequest(globalBindings);
         Map<String, Object> overrides = setRequestAttributes(request, arguments);
 
-        Object result;
+        Object result = null;
         try {
-            result = sightlyJavaCompilerService.getResourceBackedUseObject(renderContext, identifier);
+            if (slingHTLMasterCompiler != null) {
+                result = slingHTLMasterCompiler.getResourceBackedUseObject(renderContext, identifier);
+            }
             if (result != null) {
                 if (result instanceof Use) {
                     ((Use) result).init(BindingsUtils.merge(globalBindings, arguments));
@@ -94,41 +94,50 @@ public class JavaUseProvider implements UseProvider {
                 return ProviderOutcome.success(result);
             } else {
                 LOG.debug("Attempting to load class {} from the classloader cache.", identifier);
-                Class<?> cls = classLoaderWriter.getClassLoader().loadClass(identifier);
-                // attempt OSGi service load
-                result = sling.getService(cls);
-                if (result != null) {
-                    return ProviderOutcome.success(result);
+                ClassLoader classLoader = null;
+                if (slingHTLMasterCompiler != null) {
+                    classLoader = slingHTLMasterCompiler.getClassLoader();
                 }
-                Object adaptableCandidate = arguments.get(ADAPTABLE);
-                if (adaptableCandidate != null && adaptableCandidate instanceof Adaptable) {
-                    Adaptable adaptable = (Adaptable) adaptableCandidate;
-                    result = adaptable.adaptTo(cls);
+
+                // attempt OSGi service load
+                if (classLoader != null) {
+                    Class<?> cls = classLoader.loadClass(identifier);
+
+                    result = sling.getService(cls);
                     if (result != null) {
                         return ProviderOutcome.success(result);
                     }
-                }
-                result = request.adaptTo(cls);
-                if (result == null) {
-                    Resource resource = BindingsUtils.getResource(globalBindings);
-                    result = resource.adaptTo(cls);
-                }
-                if (result != null) {
-                    return ProviderOutcome.success(result);
-                } else if(cls.isInterface() || Modifier.isAbstract(cls.getModifiers())){
-                    LOG.debug("Wont attempt to instantiate an interface or abstract class {}",cls.getName());
-                    return ProviderOutcome.failure();
-                } else {
-                    /*
-                     * the object was cached by the class loader but it's not adaptable from {@link Resource} or {@link
-                     * SlingHttpServletRequest}; attempt to load it like a regular POJO that optionally could implement {@link Use}
-                     */
-                    result = cls.newInstance();
-                    if (result instanceof Use) {
-                        ((Use) result).init(BindingsUtils.merge(globalBindings, arguments));
+                    Object adaptableCandidate = arguments.get(ADAPTABLE);
+                    if (adaptableCandidate instanceof Adaptable) {
+                        Adaptable adaptable = (Adaptable) adaptableCandidate;
+                        result = adaptable.adaptTo(cls);
+                        if (result != null) {
+                            return ProviderOutcome.success(result);
+                        }
                     }
-                    return ProviderOutcome.notNullOrFailure(result);
+                    result = request.adaptTo(cls);
+                    if (result == null) {
+                        Resource resource = BindingsUtils.getResource(globalBindings);
+                        result = resource.adaptTo(cls);
+                    }
+                    if (result != null) {
+                        return ProviderOutcome.success(result);
+                    } else if (cls.isInterface() || Modifier.isAbstract(cls.getModifiers())) {
+                        LOG.debug("Wont attempt to instantiate an interface or abstract class {}", cls.getName());
+                        return ProviderOutcome.failure();
+                    } else {
+                        /*
+                         * the object was cached by the class loader but it's not adaptable from {@link Resource} or {@link
+                         * SlingHttpServletRequest}; attempt to load it like a regular POJO that optionally could implement {@link Use}
+                         */
+                        result = cls.newInstance();
+                        if (result instanceof Use) {
+                            ((Use) result).init(BindingsUtils.merge(globalBindings, arguments));
+                        }
+                        return ProviderOutcome.notNullOrFailure(result);
+                    }
                 }
+                return ProviderOutcome.failure();
             }
         } catch (Exception e) {
             // any other exception is an error

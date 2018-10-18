@@ -30,7 +30,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.i18n.ResourceBundleProvider;
-import org.apache.sling.scripting.sightly.compiler.RuntimeFunction;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.render.RenderContext;
@@ -42,7 +41,7 @@ import org.slf4j.LoggerFactory;
 @Component(
         service = RuntimeExtension.class,
         property = {
-                RuntimeExtension.NAME + "=" + RuntimeFunction.I18N
+                RuntimeExtension.NAME + "=" + RuntimeExtension.I18N
         }
 )
 public class I18nRuntimeExtension implements RuntimeExtension {
@@ -51,7 +50,7 @@ public class I18nRuntimeExtension implements RuntimeExtension {
 
     @Override
     public Object call(final RenderContext renderContext, Object... arguments) {
-        ExtensionUtils.checkArgumentCount(RuntimeFunction.I18N, arguments, 2);
+        ExtensionUtils.checkArgumentCount(RuntimeExtension.I18N, arguments, 2);
         RuntimeObjectModel runtimeObjectModel = renderContext.getObjectModel();
         String text = runtimeObjectModel.toString(arguments[0]);
         Map<String, Object> options = (Map<String, Object>) arguments[1];

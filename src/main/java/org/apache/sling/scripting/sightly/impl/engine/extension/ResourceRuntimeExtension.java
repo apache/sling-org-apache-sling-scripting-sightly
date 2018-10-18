@@ -37,7 +37,6 @@ import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceUtil;
 import org.apache.sling.api.resource.SyntheticResource;
 import org.apache.sling.scripting.sightly.SightlyException;
-import org.apache.sling.scripting.sightly.compiler.RuntimeFunction;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.render.RenderContext;
@@ -52,7 +51,7 @@ import org.slf4j.LoggerFactory;
 @Component(
         service = RuntimeExtension.class,
         property = {
-                RuntimeExtension.NAME + "=" + RuntimeFunction.RESOURCE
+                RuntimeExtension.NAME + "=" + RuntimeExtension.RESOURCE
         }
 )
 public class ResourceRuntimeExtension implements RuntimeExtension {
@@ -70,7 +69,7 @@ public class ResourceRuntimeExtension implements RuntimeExtension {
 
     @Override
     public Object call(final RenderContext renderContext, Object... arguments) {
-        ExtensionUtils.checkArgumentCount(RuntimeFunction.RESOURCE, arguments, 2);
+        ExtensionUtils.checkArgumentCount(RuntimeExtension.RESOURCE, arguments, 2);
         return provideResource(renderContext, arguments[0], (Map<String, Object>) arguments[1]);
     }
 

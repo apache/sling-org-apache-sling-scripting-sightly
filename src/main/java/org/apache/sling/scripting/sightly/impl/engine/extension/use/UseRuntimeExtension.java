@@ -29,7 +29,6 @@ import javax.script.SimpleBindings;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.scripting.sightly.SightlyException;
-import org.apache.sling.scripting.sightly.compiler.RuntimeFunction;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.impl.engine.extension.ExtensionUtils;
 import org.apache.sling.scripting.sightly.render.RenderContext;
@@ -49,7 +48,7 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 @Component(
         service = RuntimeExtension.class,
         property = {
-                RuntimeExtension.NAME + "=" + RuntimeFunction.USE
+                RuntimeExtension.NAME + "=" + RuntimeExtension.USE
         }
 )
 public class UseRuntimeExtension implements RuntimeExtension {
@@ -58,7 +57,7 @@ public class UseRuntimeExtension implements RuntimeExtension {
 
     @Override
     public Object call(final RenderContext renderContext, Object... arguments) {
-        ExtensionUtils.checkArgumentCount(RuntimeFunction.USE, arguments, 2);
+        ExtensionUtils.checkArgumentCount(RuntimeExtension.USE, arguments, 2);
         RuntimeObjectModel runtimeObjectModel = renderContext.getObjectModel();
         String identifier = runtimeObjectModel.toString(arguments[0]);
         if (StringUtils.isEmpty(identifier)) {

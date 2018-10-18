@@ -19,16 +19,19 @@
 package org.apache.sling.scripting.sightly.impl.engine.runtime;
 
 import java.util.Map;
+
 import javax.script.Bindings;
 import javax.script.ScriptContext;
 
+import org.apache.sling.api.scripting.SlingScriptConstants;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.impl.engine.ExtensionRegistryService;
-import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.render.AbstractRuntimeObjectModel;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.wiring.BundleWiring;
 
 /**
  * Rendering context for HTL rendering units.
@@ -40,9 +43,14 @@ public class RenderContextImpl implements RenderContext {
     private final Bindings bindings;
     private final ExtensionRegistryService extensionRegistryService;
 
-    public RenderContextImpl(ScriptContext scriptContext) {
+    public RenderContextImpl(ExtensionRegistryService extensionRegistryService, ScriptContext scriptContext) {
+        this.extensionRegistryService = extensionRegistryService;
         bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
-        extensionRegistryService = BindingsUtils.getHelper(bindings).getService(ExtensionRegistryService.class);
+        Bundle scriptProvidingBundle = (Bundle) scriptContext.getAttribute("org.apache.sling.scripting.resolver.provider.bundle",
+                SlingScriptConstants.SLING_SCOPE);
+        if (scriptProvidingBundle != null) {
+            bindings.put("org.apache.sling.scripting.sightly.render_unit.loader", scriptProvidingBundle.adapt(BundleWiring.class).getClassLoader());
+        }
     }
 
     @Override
