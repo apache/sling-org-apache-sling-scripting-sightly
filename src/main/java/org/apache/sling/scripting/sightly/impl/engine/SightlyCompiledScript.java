@@ -19,27 +19,26 @@
 package org.apache.sling.scripting.sightly.impl.engine;
 
 import java.io.PrintWriter;
+
 import javax.script.Bindings;
 import javax.script.CompiledScript;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
-import javax.script.ScriptException;
 import javax.script.SimpleBindings;
 
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.scripting.SlingBindings;
-import org.apache.sling.api.scripting.SlingScriptConstants;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.impl.engine.runtime.RenderContextImpl;
-import org.apache.sling.scripting.sightly.java.compiler.RenderUnit;
 import org.apache.sling.scripting.sightly.render.RenderContext;
+import org.apache.sling.scripting.sightly.render.RenderUnit;
 
 public class SightlyCompiledScript extends CompiledScript {
 
-    private ScriptEngine scriptEngine;
-    private RenderUnit renderUnit;
+    private final SightlyScriptEngine scriptEngine;
+    private final RenderUnit renderUnit;
 
-    public SightlyCompiledScript(ScriptEngine scriptEngine, RenderUnit renderUnit) {
+    public SightlyCompiledScript(SightlyScriptEngine scriptEngine, RenderUnit renderUnit) {
         this.scriptEngine = scriptEngine;
         this.renderUnit = renderUnit;
     }
@@ -56,7 +55,7 @@ public class SightlyCompiledScript extends CompiledScript {
         Object oldBindings = request.getAttribute(SlingBindings.class.getName());
         try {
             request.setAttribute(SlingBindings.class.getName(), slingBindings);
-            RenderContext renderContext = new RenderContextImpl(context);
+            RenderContext renderContext = new RenderContextImpl(scriptEngine.getExtensionRegistryService(), context);
             PrintWriter out = new PrintWriter(context.getWriter());
             renderUnit.render(out, renderContext, new SimpleBindings());
         } finally {

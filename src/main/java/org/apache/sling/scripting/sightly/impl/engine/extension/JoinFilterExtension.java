@@ -21,7 +21,6 @@ package org.apache.sling.scripting.sightly.impl.engine.extension;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.apache.sling.scripting.sightly.compiler.RuntimeFunction;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
@@ -30,14 +29,14 @@ import org.osgi.service.component.annotations.Component;
 @Component(
         service = RuntimeExtension.class,
         property = {
-                RuntimeExtension.NAME + "=" + RuntimeFunction.JOIN
+                RuntimeExtension.NAME + "=" + RuntimeExtension.JOIN
         }
 )
 public class JoinFilterExtension implements RuntimeExtension {
 
     @Override
     public Object call(final RenderContext renderContext, Object... arguments) {
-        ExtensionUtils.checkArgumentCount(RuntimeFunction.JOIN, arguments, 2);
+        ExtensionUtils.checkArgumentCount(RuntimeExtension.JOIN, arguments, 2);
         Object joinArgument = arguments[0];
         RuntimeObjectModel runtimeObjectModel = renderContext.getObjectModel();
         Collection<?> collection = runtimeObjectModel.toCollection(joinArgument);

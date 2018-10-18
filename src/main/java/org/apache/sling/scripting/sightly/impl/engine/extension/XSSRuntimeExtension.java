@@ -18,19 +18,18 @@
  ******************************************************************************/
 package org.apache.sling.scripting.sightly.impl.engine.extension;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.sling.scripting.sightly.SightlyException;
-import org.apache.sling.scripting.sightly.compiler.RuntimeFunction;
-import org.apache.sling.scripting.sightly.compiler.expression.MarkupContext;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.xss.XSSAPI;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,12 +39,12 @@ import org.slf4j.LoggerFactory;
 @Component(
         service = RuntimeExtension.class,
         property = {
-                RuntimeExtension.NAME + "=" + RuntimeFunction.XSS
+                RuntimeExtension.NAME + "=" + RuntimeExtension.XSS
         }
 )
 public class XSSRuntimeExtension implements RuntimeExtension {
 
-    @Reference(policyOption = ReferencePolicyOption.GREEDY)
+    @Reference
     private XSSAPI xssApi;
 
     private static final Set<String> elementNameWhiteList = new HashSet<>();
@@ -57,7 +56,7 @@ public class XSSRuntimeExtension implements RuntimeExtension {
     public Object call(final RenderContext renderContext, Object... arguments) {
         if (arguments.length < 2) {
             throw new SightlyException(
-                    String.format("Extension %s requires at least %d arguments", RuntimeFunction.XSS, 2));
+                    String.format("Extension %s requires at least %d arguments", RuntimeExtension.XSS, 2));
         }
         Object original = arguments[0];
         Object option = arguments[1];
@@ -237,4 +236,53 @@ public class XSSRuntimeExtension implements RuntimeExtension {
     private boolean isSensitiveAttribute(String name) {
         return ATTRIBUTE_BLACKLIST.matcher(name).matches();
     }
+
+    private enum MarkupContext {
+
+        HTML("html"),
+        TEXT("text"),
+        ELEMENT_NAME("elementName"),
+        ATTRIBUTE_NAME("attributeName"),
+        ATTRIBUTE("attribute"),
+        URI("uri"),
+        SCRIPT_TOKEN("scriptToken"),
+        SCRIPT_STRING("scriptString"),
+        SCRIPT_COMMENT("scriptComment"),
+        SCRIPT_REGEXP("scriptRegExp"),
+        STYLE_TOKEN("styleToken"),
+        STYLE_STRING("styleString"),
+        STYLE_COMMENT("styleComment"),
+        COMMENT("comment"),
+        NUMBER("number"),
+        UNSAFE("unsafe");
+
+        private final String name;
+
+        MarkupContext(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        /**
+         * Returns the render context with the given name.
+         *
+         * @param name the name of the render context
+         * @return the rendering context value or {@code null} if the name matches no value
+         */
+        static MarkupContext lookup(String name) {
+            return reverseMap.get(name);
+        }
+
+        private static final Map<String, MarkupContext> reverseMap = new HashMap<>();
+
+        static {
+            for (MarkupContext markupContext : MarkupContext.values()) {
+                reverseMap.put(markupContext.getName(), markupContext);
+            }
+        }
+    }
+
 }

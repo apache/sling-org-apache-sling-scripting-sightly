@@ -29,7 +29,7 @@ import javax.script.SimpleBindings;
 
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.scripting.SlingBindings;
-import org.apache.sling.scripting.sightly.java.compiler.RenderUnit;
+import org.apache.sling.scripting.sightly.render.RenderUnit;
 import org.apache.sling.testing.mock.osgi.MockOsgi;
 import org.apache.sling.testing.mock.sling.MockSling;
 import org.apache.sling.testing.mock.sling.junit.SlingContext;
@@ -55,8 +55,8 @@ public class SightlyCompiledScriptTest {
      * @throws ScriptException
      */
     @Test
-    public void testEvalSlingBindings() throws ScriptException {
-        ScriptEngine scriptEngine = mock(ScriptEngine.class);
+    public void testEvalSlingBindings() {
+        SightlyScriptEngine scriptEngine = mock(SightlyScriptEngine.class);
         final RenderUnit renderUnit = mock(RenderUnit.class);
         Whitebox.setInternalState(renderUnit, "subTemplates", new HashMap<String, Object>());
         final BundleContext bundleContext = MockOsgi.newBundleContext();

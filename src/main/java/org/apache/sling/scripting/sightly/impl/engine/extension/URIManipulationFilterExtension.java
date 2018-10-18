@@ -36,7 +36,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.request.RequestPathInfo;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.scripting.sightly.SightlyException;
-import org.apache.sling.scripting.sightly.compiler.RuntimeFunction;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
@@ -48,7 +47,7 @@ import org.slf4j.LoggerFactory;
 @Component(
         service = RuntimeExtension.class,
         property = {
-                RuntimeExtension.NAME + "=" + RuntimeFunction.URI_MANIPULATION
+                RuntimeExtension.NAME + "=" + RuntimeExtension.URI_MANIPULATION
         }
 )
 public class URIManipulationFilterExtension implements RuntimeExtension {
@@ -75,7 +74,7 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
     @Override
     @SuppressWarnings("unchecked")
     public Object call(RenderContext renderContext, Object... arguments) {
-        ExtensionUtils.checkArgumentCount(RuntimeFunction.URI_MANIPULATION, arguments, 2);
+        ExtensionUtils.checkArgumentCount(RuntimeExtension.URI_MANIPULATION, arguments, 2);
         RuntimeObjectModel runtimeObjectModel = renderContext.getObjectModel();
         String uriString = runtimeObjectModel.toString(arguments[0]);
         Map<String, Object> options = runtimeObjectModel.toMap(arguments[1]);
