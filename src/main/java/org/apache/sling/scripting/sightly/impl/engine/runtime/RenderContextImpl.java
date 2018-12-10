@@ -46,7 +46,7 @@ public class RenderContextImpl implements RenderContext {
     public RenderContextImpl(ExtensionRegistryService extensionRegistryService, ScriptContext scriptContext) {
         this.extensionRegistryService = extensionRegistryService;
         bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
-        Bundle scriptProvidingBundle = (Bundle) scriptContext.getAttribute("org.apache.sling.scripting.resolver.provider.bundle",
+        Bundle scriptProvidingBundle = (Bundle) scriptContext.getAttribute("org.apache.sling.scripting.bundle.tracker.provider.bundle",
                 SlingScriptConstants.SLING_SCOPE);
         if (scriptProvidingBundle != null) {
             bindings.put("org.apache.sling.scripting.sightly.render_unit.loader", scriptProvidingBundle.adapt(BundleWiring.class).getClassLoader());

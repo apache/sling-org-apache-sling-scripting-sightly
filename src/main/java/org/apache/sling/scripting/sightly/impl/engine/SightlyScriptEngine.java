@@ -30,7 +30,7 @@ import javax.script.ScriptException;
 import org.apache.sling.scripting.api.AbstractSlingScriptEngine;
 import org.apache.sling.scripting.api.ScriptNameAware;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
-import org.apache.sling.scripting.resolver.BundledRenderUnit;
+import org.apache.sling.scripting.bundle.tracker.BundledRenderUnit;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.compiler.CompilationResult;
 import org.apache.sling.scripting.sightly.compiler.CompilationUnit;

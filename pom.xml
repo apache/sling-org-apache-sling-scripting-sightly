@@ -198,7 +198,7 @@
 
         <dependency>
             <groupId>org.apache.sling</groupId>
-            <artifactId>org.apache.sling.scripting.resolver</artifactId>
+            <artifactId>org.apache.sling.scripting.bundle.tracker</artifactId>
             <version>0.0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
