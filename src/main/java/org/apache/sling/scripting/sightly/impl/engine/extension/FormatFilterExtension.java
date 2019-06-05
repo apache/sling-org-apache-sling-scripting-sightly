@@ -50,7 +50,6 @@ public class FormatFilterExtension implements RuntimeExtension {
     private static final String FORMAT_OPTION = "format";
     private static final String TYPE_OPTION = "type";
     private static final String LOCALE_OPTION = "locale";
-    private static final String FORMAT_LOCALE_OPTION = "formatLocale";
     private static final String TIMEZONE_OPTION = "timezone";
 
     private static final String DATE_FORMAT_TYPE = "date";
@@ -89,9 +88,6 @@ public class FormatFilterExtension implements RuntimeExtension {
         String localeOption = null;
         if (options.containsKey(LOCALE_OPTION)) {
             localeOption = runtimeObjectModel.toString(options.get(LOCALE_OPTION));
-        }
-        if (localeOption == null && options.containsKey(FORMAT_LOCALE_OPTION)) {
-            localeOption = runtimeObjectModel.toString(options.get(FORMAT_LOCALE_OPTION));
         }
         if (StringUtils.isNotBlank(localeOption)) {
             return LocaleUtils.toLocale(localeOption);
