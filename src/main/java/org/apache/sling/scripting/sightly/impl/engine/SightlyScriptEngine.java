@@ -21,29 +21,14 @@ package org.apache.sling.scripting.sightly.impl.engine;
 import java.io.Reader;
 import java.io.StringReader;
 
-import javax.script.Bindings;
 import javax.script.Compilable;
 import javax.script.CompiledScript;
 import javax.script.ScriptContext;
 import javax.script.ScriptException;
 
 import org.apache.sling.scripting.api.AbstractSlingScriptEngine;
-import org.apache.sling.scripting.api.ScriptNameAware;
-import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
-import org.apache.sling.scripting.bundle.tracker.BundledRenderUnit;
-import org.apache.sling.scripting.sightly.SightlyException;
-import org.apache.sling.scripting.sightly.compiler.CompilationResult;
-import org.apache.sling.scripting.sightly.compiler.CompilationUnit;
-import org.apache.sling.scripting.sightly.compiler.CompilerMessage;
-import org.apache.sling.scripting.sightly.compiler.SightlyCompiler;
-import org.apache.sling.scripting.sightly.impl.engine.compiled.SourceIdentifier;
-import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
-import org.apache.sling.scripting.sightly.java.compiler.GlobalShadowCheckBackendCompiler;
-import org.apache.sling.scripting.sightly.java.compiler.JavaClassBackendCompiler;
-import org.apache.sling.scripting.sightly.java.compiler.JavaEscapeUtils;
-import org.apache.sling.scripting.sightly.java.compiler.JavaImportsAnalyzer;
+import org.apache.sling.scripting.sightly.impl.engine.precompiled.PrecompiledUnitManager;
 import org.apache.sling.scripting.sightly.impl.engine.compiled.SlingHTLMasterCompiler;
-import org.apache.sling.scripting.sightly.render.RenderUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,12 +40,15 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
     private static final Logger LOGGER = LoggerFactory.getLogger(SightlyScriptEngine.class);
 
     private SlingHTLMasterCompiler slingHTLMasterCompiler;
+    private PrecompiledUnitManager precompiledUnitManager;
     private ExtensionRegistryService extensionRegistryService;
 
-    SightlyScriptEngine(SightlyScriptEngineFactory factory, ExtensionRegistryService extensionRegistryService, SlingHTLMasterCompiler slingHTLMasterCompiler) {
+    SightlyScriptEngine(SightlyScriptEngineFactory factory, ExtensionRegistryService extensionRegistryService,
+                        SlingHTLMasterCompiler slingHTLMasterCompiler, PrecompiledUnitManager precompiledUnitManager) {
         super(factory);
         this.extensionRegistryService = extensionRegistryService;
         this.slingHTLMasterCompiler = slingHTLMasterCompiler;
+        this.precompiledUnitManager = precompiledUnitManager;
     }
 
     @Override
@@ -81,21 +69,14 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
         checkArguments(reader, scriptContext);
         try {
             SightlyCompiledScript compiledScript = null;
-            Bindings bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
-            Object bundledRenderUnit = bindings.get(BundledRenderUnit.VARIABLE);
-            Object renderUnit = null;
-            if (bundledRenderUnit instanceof BundledRenderUnit) {
-                renderUnit = ((BundledRenderUnit) bundledRenderUnit).getUnit();
-                if (renderUnit instanceof RenderUnit) {
-                    compiledScript = new SightlyCompiledScript(this, (RenderUnit) renderUnit);
-                    return compiledScript.eval(scriptContext);
-                }
+            if (precompiledUnitManager != null) {
+                compiledScript = precompiledUnitManager.evaluate(this, scriptContext);
             }
             if (slingHTLMasterCompiler != null) {
                 compiledScript = slingHTLMasterCompiler.compileHTLScript(this, reader, scriptContext);
-                if (compiledScript != null) {
-                    return compiledScript.eval(scriptContext);
-                }
+            }
+            if (compiledScript != null) {
+                return compiledScript.eval(scriptContext);
             }
         } catch (Exception e) {
             throw new ScriptException(e);
