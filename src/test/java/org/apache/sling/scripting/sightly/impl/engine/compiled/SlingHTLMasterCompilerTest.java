@@ -32,10 +32,10 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.commons.classloader.ClassLoaderWriter;
 import org.apache.sling.commons.compiler.CompilationResult;
 import org.apache.sling.commons.compiler.CompilationUnit;
-import org.apache.sling.commons.compiler.CompilerMessage;
 import org.apache.sling.commons.compiler.JavaCompiler;
 import org.apache.sling.commons.compiler.Options;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
+import org.apache.sling.scripting.sightly.compiler.SightlyCompiler;
 import org.apache.sling.scripting.sightly.impl.compiler.MockPojo;
 import org.apache.sling.scripting.sightly.impl.engine.ResourceBackedPojoChangeMonitor;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyEngineConfiguration;
@@ -45,15 +45,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.powermock.reflect.Whitebox;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -85,15 +83,18 @@ public class SlingHTLMasterCompilerTest {
 
         compiler = spy(new SlingHTLMasterCompiler());
         javaCompiler = mock(JavaCompiler.class);
+        SightlyCompiler sightlyCompiler = new SightlyCompiler();
+        classLoaderWriter = Mockito.mock(ClassLoaderWriter.class);
+        ClassLoader classLoader = Mockito.mock(ClassLoader.class);
+        when(classLoaderWriter.getClassLoader()).thenReturn(classLoader);
 
         resourceBackedPojoChangeMonitor = spy(new ResourceBackedPojoChangeMonitor());
 
         Whitebox.setInternalState(compiler, "sightlyEngineConfiguration", sightlyEngineConfiguration);
         Whitebox.setInternalState(compiler, "resourceBackedPojoChangeMonitor", resourceBackedPojoChangeMonitor);
         Whitebox.setInternalState(compiler, "javaCompiler", javaCompiler);
-        classLoaderWriter = Mockito.mock(ClassLoaderWriter.class);
-        ClassLoader classLoader = Mockito.mock(ClassLoader.class);
-        when(classLoaderWriter.getClassLoader()).thenReturn(classLoader);
+        Whitebox.setInternalState(compiler, "sightlyCompiler", sightlyCompiler);
+        Whitebox.setInternalState(compiler, "classLoaderWriter", classLoaderWriter);
     }
 
     @After
@@ -106,21 +107,17 @@ public class SlingHTLMasterCompilerTest {
 
     @Test
     public void testActivateNoPreviousInfo() {
-        SlingHTLMasterCompiler slingHTLMasterCompiler = new SlingHTLMasterCompiler();
         ClassLoaderWriter classLoaderWriter = mock(ClassLoaderWriter.class);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         when(classLoaderWriter.getOutputStream(SlingHTLMasterCompiler.SIGHTLY_CONFIG_FILE)).thenReturn(outputStream);
-        Whitebox.setInternalState(slingHTLMasterCompiler, "classLoaderWriter", classLoaderWriter);
-        Whitebox.setInternalState(slingHTLMasterCompiler, "sightlyEngineConfiguration", sightlyEngineConfiguration);
-        Whitebox.setInternalState(slingHTLMasterCompiler, "scriptingResourceResolverProvider", scriptingResourceResolverProvider);
-        slingHTLMasterCompiler.activate();
+        Whitebox.setInternalState(compiler, "classLoaderWriter", classLoaderWriter);
+        compiler.activate();
         verify(classLoaderWriter).delete(sightlyEngineConfiguration.getScratchFolder());
         assertEquals("1.0.17-SNAPSHOT", outputStream.toString());
     }
 
     @Test
     public void testActivateOverPreviousVersion()  {
-        SlingHTLMasterCompiler slingHTLMasterCompiler = new SlingHTLMasterCompiler();
         ClassLoaderWriter classLoaderWriter = mock(ClassLoaderWriter.class);
         try {
             when(classLoaderWriter.getInputStream(SlingHTLMasterCompiler.SIGHTLY_CONFIG_FILE))
@@ -131,17 +128,14 @@ public class SlingHTLMasterCompilerTest {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         when(classLoaderWriter.getOutputStream(SlingHTLMasterCompiler.SIGHTLY_CONFIG_FILE)).thenReturn(outputStream);
         when(classLoaderWriter.delete(sightlyEngineConfiguration.getScratchFolder())).thenReturn(true);
-        Whitebox.setInternalState(slingHTLMasterCompiler, "classLoaderWriter", classLoaderWriter);
-        Whitebox.setInternalState(slingHTLMasterCompiler, "sightlyEngineConfiguration", sightlyEngineConfiguration);
-        Whitebox.setInternalState(slingHTLMasterCompiler, "scriptingResourceResolverProvider", scriptingResourceResolverProvider);
-        slingHTLMasterCompiler.activate();
+        Whitebox.setInternalState(compiler, "classLoaderWriter", classLoaderWriter);
+        compiler.activate();
         verify(classLoaderWriter).delete(sightlyEngineConfiguration.getScratchFolder());
         assertEquals("1.0.17-SNAPSHOT", outputStream.toString());
     }
 
     @Test
     public void testActivateOverSameVersion() {
-        SlingHTLMasterCompiler slingHTLMasterCompiler = new SlingHTLMasterCompiler();
         ClassLoaderWriter classLoaderWriter = mock(ClassLoaderWriter.class);
         try {
             when(classLoaderWriter.getInputStream(SlingHTLMasterCompiler.SIGHTLY_CONFIG_FILE))
@@ -152,10 +146,8 @@ public class SlingHTLMasterCompilerTest {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         ByteArrayOutputStream spyOutputStream = spy(outputStream);
         when(classLoaderWriter.getOutputStream(SlingHTLMasterCompiler.SIGHTLY_CONFIG_FILE)).thenReturn(spyOutputStream);
-        Whitebox.setInternalState(slingHTLMasterCompiler, "classLoaderWriter", classLoaderWriter);
-        Whitebox.setInternalState(slingHTLMasterCompiler, "sightlyEngineConfiguration", sightlyEngineConfiguration);
-        Whitebox.setInternalState(slingHTLMasterCompiler, "scriptingResourceResolverProvider", scriptingResourceResolverProvider);
-        slingHTLMasterCompiler.activate();
+        Whitebox.setInternalState(compiler, "classLoaderWriter", classLoaderWriter);
+        compiler.activate();
         verify(classLoaderWriter, never()).delete(sightlyEngineConfiguration.getScratchFolder());
         try {
             verify(spyOutputStream, never()).write(any(byte[].class));
@@ -208,7 +200,7 @@ public class SlingHTLMasterCompilerTest {
          * assuming the compiled class has a last modified date greater than the source, then the compiler should not recompile the Use
          * object
          */
-        verify(compiler).getResourceBackedUseObject(any(RenderContext.class), anyString());
+        verify(compiler).getResourceBackedUseObject(any(RenderContext.class), any(String.class));
     }
 
     @Test
@@ -250,7 +242,7 @@ public class SlingHTLMasterCompilerTest {
          * assuming the compiled class has a last modified date greater than the source, then the compiler should not recompile the Use
          * object
          */
-        verify(javaCompiler, times(1)).compile(any(CompilationUnit[].class), any(Options.class));
+        verify(javaCompiler, times(1)).compile(any(CompilationUnit[].class), isNull());
     }
 
     @Test
@@ -277,19 +269,15 @@ public class SlingHTLMasterCompilerTest {
     }
 
     private void getInstancePojoTest(String className) throws Exception {
-        RenderContextImpl renderContext = Mockito.mock(RenderContextImpl.class);
-        CompilationResult compilationResult = Mockito.mock(CompilationResult.class);
-        when(compilationResult.getErrors()).thenReturn(new ArrayList<CompilerMessage>());
-        when(javaCompiler.compile(Mockito.any(CompilationUnit[].class), Mockito.any(Options.class))).thenReturn(compilationResult);
-        when(classLoaderWriter.getClassLoader().loadClass(className)).thenAnswer(new Answer<Object>() {
-            @Override
-            public Object answer(InvocationOnMock invocation) {
-                return MockPojo.class;
-            }
-        });
+        RenderContextImpl renderContext = mock(RenderContextImpl.class);
+        CompilationResult compilationResult = mock(CompilationResult.class);
+        when(compilationResult.getErrors()).thenReturn(new ArrayList<>());
+        when(javaCompiler.compile(any(CompilationUnit[].class), isNull())).thenReturn(compilationResult);
+        when(classLoaderWriter.getClassLoader().loadClass(className)).thenAnswer(invocationOnMock -> MockPojo.class);
         Whitebox.setInternalState(compiler, "classLoaderWriter", classLoaderWriter);
         Whitebox.setInternalState(compiler, "javaCompiler", javaCompiler);
         Whitebox.setInternalState(compiler, "scriptingResourceResolverProvider", scriptingResourceResolverProvider);
+        Whitebox.setInternalState(compiler, "sightlyCompiler", new SightlyCompiler());
         Object obj = compiler.getResourceBackedUseObject(renderContext, className);
         assertTrue("Expected to obtain a " + MockPojo.class.getName() + " object.", obj instanceof MockPojo);
     }

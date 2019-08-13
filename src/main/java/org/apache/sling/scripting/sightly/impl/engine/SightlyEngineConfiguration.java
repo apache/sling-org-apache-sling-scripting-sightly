@@ -21,6 +21,9 @@ package org.apache.sling.scripting.sightly.impl.engine;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
@@ -48,11 +51,18 @@ public class SightlyEngineConfiguration {
         )
         boolean keepGenerated() default true;
 
+        @AttributeDefinition(
+                name = "Known Expression Options",
+                description = "A list of extra expression options that should be ignored by the HTL compiler when reporting unknown options."
+        )
+        String[] allowedExpressionOptions();
+
     }
 
     private String engineVersion = "0";
     private boolean keepGenerated;
     private String bundleSymbolicName = "org.apache.sling.scripting.sightly";
+    private Set<String> allowedExpressionOptions;
 
     public String getEngineVersion() {
         return engineVersion;
@@ -68,6 +78,10 @@ public class SightlyEngineConfiguration {
 
     public boolean keepGenerated() {
         return keepGenerated;
+    }
+
+    public Set<String> getAllowedExpressionOptions() {
+        return allowedExpressionOptions;
     }
 
     @Activate
@@ -97,5 +111,6 @@ public class SightlyEngineConfiguration {
             }
         }
         keepGenerated = configuration.keepGenerated();
+        allowedExpressionOptions = new HashSet<>(Arrays.asList(configuration.allowedExpressionOptions()));
     }
 }

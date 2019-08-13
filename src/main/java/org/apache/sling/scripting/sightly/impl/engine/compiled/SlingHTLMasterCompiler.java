@@ -158,6 +158,7 @@ public class SlingHTLMasterCompiler {
                 }
             }
         }
+        sightlyCompiler = SightlyCompiler.withKnownExpressionOptions(sightlyEngineConfiguration.getAllowedExpressionOptions());
     }
 
     /**
