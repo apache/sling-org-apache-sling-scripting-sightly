@@ -33,7 +33,13 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Component(immediate = true)
+@Component(
+        immediate = true,
+        service = {}
+        /*
+         * this component will register itself as a service only if the org.apache.sling.scripting.bundle.tracker API is present
+         */
+)
 public class PrecompiledUnitManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PrecompiledUnitManager.class);
