@@ -71,8 +71,7 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
             SightlyCompiledScript compiledScript = null;
             if (precompiledUnitManager != null) {
                 compiledScript = precompiledUnitManager.evaluate(this, scriptContext);
-            }
-            if (slingHTLMasterCompiler != null) {
+            } else if (slingHTLMasterCompiler != null) {
                 compiledScript = slingHTLMasterCompiler.compileHTLScript(this, reader, scriptContext);
             }
             if (compiledScript != null) {
