@@ -22,6 +22,7 @@ import javax.script.SimpleBindings;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 
@@ -79,7 +80,7 @@ public class BindingsUtils {
      * @return the merging of the two maps
      */
     public static Bindings merge(Bindings former, Bindings latter) {
-        Bindings bindings = new SimpleBindings();
+        Bindings bindings = new LazyBindings();
         bindings.putAll(former);
         bindings.putAll(latter);
         return bindings;

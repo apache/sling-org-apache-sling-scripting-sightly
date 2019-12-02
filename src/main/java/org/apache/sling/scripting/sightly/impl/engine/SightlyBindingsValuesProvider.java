@@ -21,7 +21,7 @@ package org.apache.sling.scripting.sightly.impl.engine;
 import javax.script.Bindings;
 
 import org.apache.sling.api.resource.Resource;
-import org.apache.sling.api.resource.ValueMap;
+import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.scripting.api.BindingsValuesProvider;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.osgi.service.component.annotations.Component;
@@ -36,14 +36,20 @@ import org.osgi.service.component.annotations.Component;
 )
 public class SightlyBindingsValuesProvider implements BindingsValuesProvider {
 
-    public static final String PROPERTIES = "properties";
+    private static final String PROPERTIES = "properties";
 
     @Override
     public void addBindings(Bindings bindings) {
         if (!bindings.containsKey(PROPERTIES)) {
             Resource currentResource = BindingsUtils.getResource(bindings);
-            if (currentResource != null) {
-                bindings.put(PROPERTIES, currentResource.adaptTo(ValueMap.class));
+            if (bindings instanceof LazyBindings) {
+                if (currentResource != null) {
+                    bindings.put(PROPERTIES, (LazyBindings.Supplier) currentResource::getValueMap);
+                }
+            } else {
+                if (currentResource != null) {
+                    bindings.put(PROPERTIES, currentResource.getValueMap());
+                }
             }
         }
     }
