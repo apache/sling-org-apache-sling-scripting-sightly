@@ -28,6 +28,7 @@ import javax.servlet.Servlet;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
+import org.apache.sling.api.resource.ResourceUtil;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.api.servlets.ServletResolver;
 import org.apache.sling.scripting.sightly.SightlyException;
@@ -82,14 +83,24 @@ public class IncludeRuntimeExtension implements RuntimeExtension {
             return null;
         }
         String prependPath = (String) options.get(OPTION_PREPEND_PATH);
-        String appendPath = (String) options.get(OPTION_APPEND_PATH);
+        if (prependPath == null) {
+            prependPath = StringUtils.EMPTY;
+        }
         if (StringUtils.isNotEmpty(prependPath)) {
-            path = prependPath + path;
+            if (!prependPath.endsWith("/")) {
+                prependPath += "/";
+            }
+        }
+        String appendPath = (String) options.get(OPTION_APPEND_PATH);
+        if (appendPath == null) {
+            appendPath = StringUtils.EMPTY;
         }
         if (StringUtils.isNotEmpty(appendPath)) {
-            path = path + appendPath;
+            if (!appendPath.startsWith("/")) {
+                appendPath = "/" + appendPath;
+            }
         }
-        return path;
+        return ResourceUtil.normalize(prependPath + path + appendPath);
     }
 
     private void includeScript(final Bindings bindings, String script, PrintWriter out) {
