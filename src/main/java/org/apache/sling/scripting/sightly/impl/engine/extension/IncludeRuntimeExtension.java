@@ -87,7 +87,7 @@ public class IncludeRuntimeExtension implements RuntimeExtension {
             prependPath = StringUtils.EMPTY;
         }
         if (StringUtils.isNotEmpty(prependPath)) {
-            if (!prependPath.endsWith("/")) {
+            if (!prependPath.endsWith("/") && !path.startsWith("/")) {
                 prependPath += "/";
             }
         }
@@ -96,11 +96,11 @@ public class IncludeRuntimeExtension implements RuntimeExtension {
             appendPath = StringUtils.EMPTY;
         }
         if (StringUtils.isNotEmpty(appendPath)) {
-            if (!appendPath.startsWith("/")) {
+            if (!appendPath.startsWith("/") && !path.endsWith("/")) {
                 appendPath = "/" + appendPath;
             }
         }
-        return ResourceUtil.normalize(prependPath + path + appendPath);
+        return prependPath + path + appendPath;
     }
 
     private void includeScript(final Bindings bindings, String script, PrintWriter out) {
