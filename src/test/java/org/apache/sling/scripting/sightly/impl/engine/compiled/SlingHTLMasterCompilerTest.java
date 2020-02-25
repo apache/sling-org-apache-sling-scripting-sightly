@@ -34,6 +34,7 @@ import org.apache.sling.commons.compiler.CompilationResult;
 import org.apache.sling.commons.compiler.CompilationUnit;
 import org.apache.sling.commons.compiler.JavaCompiler;
 import org.apache.sling.commons.compiler.Options;
+import org.apache.sling.commons.compiler.source.JavaEscapeHelper;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
 import org.apache.sling.scripting.sightly.compiler.SightlyCompiler;
 import org.apache.sling.scripting.sightly.impl.compiler.MockPojo;
@@ -248,12 +249,12 @@ public class SlingHTLMasterCompilerTest {
     @Test
     public void testGetPOJOFromFQCN() {
         Map<String, String> expectedScriptNames = new HashMap<String, String>() {{
-            put("/apps/a_b_c/d_e_f/Pojo.java", "apps.a_b_c.d_e_f.Pojo");
-            put("/apps/a-b-c/d.e.f/Pojo.java", "apps.a_b_c.d_e_f.Pojo");
-            put("/apps/a-b-c/d-e.f/Pojo.java", "apps.a_b_c.d_e_f.Pojo");
-            put("/apps/a-b-c/d.e_f/Pojo.java", "apps.a_b_c.d_e_f.Pojo");
-            put("/apps/a-b-c/d-e-f/Pojo.java", "apps.a_b_c.d_e_f.Pojo");
-            put("/apps/a/b/c/Pojo.java", "apps.a.b.c.Pojo");
+            put("/apps/a_b_c/d_e_f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a_b_c/d_e_f/Pojo"));
+            put("/apps/a-b-c/d.e.f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a-b-c/d.e.f/Pojo"));
+            put("/apps/a-b-c/d-e.f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a-b-c/d-e.f/Pojo"));
+            put("/apps/a-b-c/d.e_f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a-b-c/d.e_f/Pojo"));
+            put("/apps/a-b-c/d-e-f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a-b-c/d-e-f/Pojo"));
+            put("/apps/a/b/c/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a/b/c/Pojo"));
         }};
         for (Map.Entry<String, String> scriptEntry : expectedScriptNames.entrySet()) {
             ResourceResolver resolver = Mockito.mock(ResourceResolver.class);
