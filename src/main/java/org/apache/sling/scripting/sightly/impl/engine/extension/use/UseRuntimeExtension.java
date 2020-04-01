@@ -35,7 +35,6 @@ import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
 import org.apache.sling.scripting.sightly.use.ProviderOutcome;
 import org.apache.sling.scripting.sightly.use.UseProvider;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -86,9 +85,8 @@ public class UseRuntimeExtension implements RuntimeExtension {
             service = UseProvider.class,
             cardinality = ReferenceCardinality.MULTIPLE
     )
-    private void bindUseProvider(ServiceReference serviceReference) {
-        BundleContext bundleContext = serviceReference.getBundle().getBundleContext();
-        providersMap.put(serviceReference, (UseProvider) bundleContext.getService(serviceReference));
+    private void bindUseProvider(ServiceReference<UseProvider> serviceReference, UseProvider provider) {
+        providersMap.put(serviceReference, provider);
     }
 
     private void unbindUseProvider(ServiceReference serviceReference) {

@@ -25,8 +25,10 @@ import org.apache.sling.scripting.bundle.tracker.BundledRenderUnit;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyCompiledScript;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngine;
 import org.apache.sling.scripting.sightly.render.RenderUnit;
+import org.jetbrains.annotations.Nullable;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -34,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Component(
-        immediate = true,
         service = {}
         /*
          * this component will register itself as a service only if the org.apache.sling.scripting.bundle.tracker API is present
@@ -60,7 +61,7 @@ public class PrecompiledUnitManager {
 
 
     /**
-     * Provides support for evaluating precompiled HTL scripts passed through the {@code scriptContext}. This feature works only when the
+     * Provides support for extracting precompiled HTL scripts passed through the {@code scriptContext}. This feature works only when the
      * {@link org.apache.sling.scripting.bundle.tracker.BundledRenderUnit} API is deployed to the platform as well.
      *
      * @param sightlyScriptEngine the HTL script engine providing access to the HTL runtime
@@ -68,7 +69,8 @@ public class PrecompiledUnitManager {
      * @return an instance of the compiled script, if a precompiled {@link RenderUnit} was present in the {@link ScriptContext}, {@code
      * null} otherwise
      */
-    public SightlyCompiledScript evaluate(SightlyScriptEngine sightlyScriptEngine, ScriptContext scriptContext) {
+    @Nullable
+    public SightlyCompiledScript getSightlyCompiledScript(SightlyScriptEngine sightlyScriptEngine, ScriptContext scriptContext) {
         Bindings bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
         Object bundledRenderUnit = bindings.get(BundledRenderUnit.VARIABLE);
         if (bundledRenderUnit instanceof BundledRenderUnit) {
@@ -80,11 +82,22 @@ public class PrecompiledUnitManager {
         return null;
     }
 
-    public Object getBundledRenderUnitDependency(Bindings bindings, String identifier) {
+    @Nullable
+    public ClassLoader getBundledRenderUnitClassloader(Bindings bindings) {
         Object bru = bindings.get(BundledRenderUnit.VARIABLE);
         if (bru instanceof BundledRenderUnit) {
             BundledRenderUnit bundledRenderUnit = (BundledRenderUnit) bru;
-            return bundledRenderUnit.getService(identifier);
+            return bundledRenderUnit.getBundle().adapt(BundleWiring.class).getClassLoader();
+        }
+        return null;
+    }
+
+    @Nullable
+    public <T> T getServiceForBundledRenderUnit(Bindings bindings, Class<?> clazz) {
+        Object bru = bindings.get(BundledRenderUnit.VARIABLE);
+        if (bru instanceof BundledRenderUnit) {
+            BundledRenderUnit bundledRenderUnit = (BundledRenderUnit) bru;
+            return bundledRenderUnit.getService(clazz.getName());
         }
         return null;
     }
@@ -93,7 +106,7 @@ public class PrecompiledUnitManager {
         try {
             PrecompiledUnitManager.class.getClassLoader().loadClass("org.apache.sling.scripting.bundle.tracker.BundledRenderUnit");
             return bundleContext.registerService(PrecompiledUnitManager.class, this, null);
-        } catch (Throwable e) {
+        } catch (ClassNotFoundException e) {
             LOGGER.info("No support for precompiled scripts.");
         }
         return null;
