@@ -21,6 +21,7 @@ package org.apache.sling.scripting.sightly.impl.engine;
 import java.io.Reader;
 import java.io.StringReader;
 
+import javax.script.Bindings;
 import javax.script.Compilable;
 import javax.script.CompiledScript;
 import javax.script.ScriptContext;
@@ -29,6 +30,7 @@ import javax.script.ScriptException;
 import org.apache.sling.scripting.api.AbstractSlingScriptEngine;
 import org.apache.sling.scripting.sightly.impl.engine.precompiled.PrecompiledUnitManager;
 import org.apache.sling.scripting.sightly.impl.engine.compiled.SlingHTLMasterCompiler;
+import org.apache.sling.scripting.sightly.render.RenderUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +72,13 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
         try {
             SightlyCompiledScript compiledScript = null;
             if (precompiledUnitManager != null) {
-                compiledScript = precompiledUnitManager.getSightlyCompiledScript(this, scriptContext);
+                Bindings bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
+                if (bindings != null) {
+                    RenderUnit renderUnit = precompiledUnitManager.getRenderUnit(bindings);
+                    if (renderUnit != null) {
+                        compiledScript = new SightlyCompiledScript(this, renderUnit);
+                    }
+                }
             } else if (slingHTLMasterCompiler != null) {
                 compiledScript = slingHTLMasterCompiler.compileHTLScript(this, reader, scriptContext);
             }

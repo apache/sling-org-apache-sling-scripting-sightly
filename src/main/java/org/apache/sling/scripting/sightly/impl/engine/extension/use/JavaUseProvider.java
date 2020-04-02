@@ -36,6 +36,7 @@ import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.impl.utils.Patterns;
 import org.apache.sling.scripting.sightly.pojo.Use;
 import org.apache.sling.scripting.sightly.render.RenderContext;
+import org.apache.sling.scripting.sightly.render.RenderUnit;
 import org.apache.sling.scripting.sightly.use.ProviderOutcome;
 import org.apache.sling.scripting.sightly.use.UseProvider;
 import org.jetbrains.annotations.NotNull;
@@ -94,7 +95,15 @@ public class JavaUseProvider implements UseProvider {
                 ClassLoader unitClassLoader = precompiledUnitManager.getBundledRenderUnitClassloader(globalBindings);
                 if (unitClassLoader != null) {
                     try {
-                        Class<?> clazz = unitClassLoader.loadClass(identifier);
+                        String className = identifier;
+                        if (className.indexOf('.') < 0) {
+                            // the class name is not fully qualified; need to prepend the package name of the current rendering unit
+                            RenderUnit renderUnit = precompiledUnitManager.getRenderUnit(globalBindings);
+                            if (renderUnit != null) {
+                                className = renderUnit.getClass().getPackage().getName() + "." + className;
+                            }
+                        }
+                        Class<?> clazz = unitClassLoader.loadClass(className);
                         return loadObject(clazz, cls -> precompiledUnitManager.getServiceForBundledRenderUnit(globalBindings, clazz),
                                 globalBindings,
                                 arguments);

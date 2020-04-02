@@ -64,19 +64,17 @@ public class PrecompiledUnitManager {
      * Provides support for extracting precompiled HTL scripts passed through the {@code scriptContext}. This feature works only when the
      * {@link org.apache.sling.scripting.bundle.tracker.BundledRenderUnit} API is deployed to the platform as well.
      *
-     * @param sightlyScriptEngine the HTL script engine providing access to the HTL runtime
-     * @param scriptContext       the script context
+     * @param bindings the global bindings of the script execution context
      * @return an instance of the compiled script, if a precompiled {@link RenderUnit} was present in the {@link ScriptContext}, {@code
      * null} otherwise
      */
     @Nullable
-    public SightlyCompiledScript getSightlyCompiledScript(SightlyScriptEngine sightlyScriptEngine, ScriptContext scriptContext) {
-        Bindings bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
+    public RenderUnit getRenderUnit(Bindings bindings) {
         Object bundledRenderUnit = bindings.get(BundledRenderUnit.VARIABLE);
         if (bundledRenderUnit instanceof BundledRenderUnit) {
             Object renderUnit = ((BundledRenderUnit) bundledRenderUnit).getUnit();
             if (renderUnit instanceof RenderUnit) {
-                return new SightlyCompiledScript(sightlyScriptEngine, (RenderUnit) renderUnit);
+                return (RenderUnit) renderUnit;
             }
         }
         return null;
