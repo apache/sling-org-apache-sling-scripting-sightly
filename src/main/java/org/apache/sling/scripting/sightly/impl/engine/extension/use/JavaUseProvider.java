@@ -30,8 +30,8 @@ import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.adapter.Adaptable;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.scripting.SlingScriptHelper;
+import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManager;
 import org.apache.sling.scripting.sightly.impl.engine.compiled.SlingHTLMasterCompiler;
-import org.apache.sling.scripting.sightly.impl.engine.precompiled.PrecompiledUnitManager;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.impl.utils.Patterns;
 import org.apache.sling.scripting.sightly.pojo.Use;
@@ -77,7 +77,7 @@ public class JavaUseProvider implements UseProvider {
     private SlingHTLMasterCompiler slingHTLMasterCompiler;
 
     @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY)
-    private PrecompiledUnitManager precompiledUnitManager;
+    private BundledUnitManager bundledUnitManager;
 
     @Override
     public ProviderOutcome provide(String identifier, RenderContext renderContext, Bindings arguments) {
@@ -91,20 +91,20 @@ public class JavaUseProvider implements UseProvider {
 
         try {
             Exception failure = null;
-            if (precompiledUnitManager != null) {
-                ClassLoader unitClassLoader = precompiledUnitManager.getBundledRenderUnitClassloader(globalBindings);
+            if (bundledUnitManager != null) {
+                ClassLoader unitClassLoader = bundledUnitManager.getBundledRenderUnitClassloader(globalBindings);
                 if (unitClassLoader != null) {
                     try {
                         String className = identifier;
                         if (className.indexOf('.') < 0) {
                             // the class name is not fully qualified; need to prepend the package name of the current rendering unit
-                            RenderUnit renderUnit = precompiledUnitManager.getRenderUnit(globalBindings);
+                            RenderUnit renderUnit = bundledUnitManager.getRenderUnit(globalBindings);
                             if (renderUnit != null) {
                                 className = renderUnit.getClass().getPackage().getName() + "." + className;
                             }
                         }
                         Class<?> clazz = unitClassLoader.loadClass(className);
-                        return loadObject(clazz, cls -> precompiledUnitManager.getServiceForBundledRenderUnit(globalBindings, clazz),
+                        return loadObject(clazz, cls -> bundledUnitManager.getServiceForBundledRenderUnit(globalBindings, clazz),
                                 globalBindings,
                                 arguments);
                     } catch (Exception e) {

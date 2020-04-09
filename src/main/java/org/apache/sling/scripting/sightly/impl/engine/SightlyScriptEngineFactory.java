@@ -22,8 +22,8 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
 
 import org.apache.sling.scripting.api.AbstractScriptEngineFactory;
+import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManager;
 import org.apache.sling.scripting.sightly.impl.engine.compiled.SlingHTLMasterCompiler;
-import org.apache.sling.scripting.sightly.impl.engine.precompiled.PrecompiledUnitManager;
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,7 +49,7 @@ public class SightlyScriptEngineFactory extends AbstractScriptEngineFactory {
     private SlingHTLMasterCompiler slingHTLMasterCompiler;
 
     @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY)
-    private PrecompiledUnitManager precompiledUnitManager;
+    private BundledUnitManager bundledUnitManager;
 
     @Reference
     private ExtensionRegistryService extensionRegistryService;
@@ -77,6 +77,6 @@ public class SightlyScriptEngineFactory extends AbstractScriptEngineFactory {
 
     @Override
     public ScriptEngine getScriptEngine() {
-        return new SightlyScriptEngine(this, extensionRegistryService, slingHTLMasterCompiler, precompiledUnitManager);
+        return new SightlyScriptEngine(this, extensionRegistryService, slingHTLMasterCompiler, bundledUnitManager);
     }
 }

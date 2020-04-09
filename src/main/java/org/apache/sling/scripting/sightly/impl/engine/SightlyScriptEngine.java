@@ -28,7 +28,7 @@ import javax.script.ScriptContext;
 import javax.script.ScriptException;
 
 import org.apache.sling.scripting.api.AbstractSlingScriptEngine;
-import org.apache.sling.scripting.sightly.impl.engine.precompiled.PrecompiledUnitManager;
+import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManager;
 import org.apache.sling.scripting.sightly.impl.engine.compiled.SlingHTLMasterCompiler;
 import org.apache.sling.scripting.sightly.render.RenderUnit;
 import org.slf4j.Logger;
@@ -42,15 +42,15 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
     private static final Logger LOGGER = LoggerFactory.getLogger(SightlyScriptEngine.class);
 
     private SlingHTLMasterCompiler slingHTLMasterCompiler;
-    private PrecompiledUnitManager precompiledUnitManager;
+    private BundledUnitManager bundledUnitManager;
     private ExtensionRegistryService extensionRegistryService;
 
     SightlyScriptEngine(SightlyScriptEngineFactory factory, ExtensionRegistryService extensionRegistryService,
-                        SlingHTLMasterCompiler slingHTLMasterCompiler, PrecompiledUnitManager precompiledUnitManager) {
+                        SlingHTLMasterCompiler slingHTLMasterCompiler, BundledUnitManager bundledUnitManager) {
         super(factory);
         this.extensionRegistryService = extensionRegistryService;
         this.slingHTLMasterCompiler = slingHTLMasterCompiler;
-        this.precompiledUnitManager = precompiledUnitManager;
+        this.bundledUnitManager = bundledUnitManager;
     }
 
     @Override
@@ -71,10 +71,10 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
         checkArguments(reader, scriptContext);
         try {
             SightlyCompiledScript compiledScript = null;
-            if (precompiledUnitManager != null) {
+            if (bundledUnitManager != null) {
                 Bindings bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
                 if (bindings != null) {
-                    RenderUnit renderUnit = precompiledUnitManager.getRenderUnit(bindings);
+                    RenderUnit renderUnit = bundledUnitManager.getRenderUnit(bindings);
                     if (renderUnit != null) {
                         compiledScript = new SightlyCompiledScript(this, renderUnit);
                     }

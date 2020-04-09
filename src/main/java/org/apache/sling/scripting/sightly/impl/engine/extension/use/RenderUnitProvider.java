@@ -39,6 +39,7 @@ import org.apache.sling.scripting.sightly.engine.ResourceResolution;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyCompiledScript;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngine;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngineFactory;
+import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManager;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.impl.utils.ScriptUtils;
 import org.apache.sling.scripting.sightly.render.RenderContext;
@@ -76,6 +77,9 @@ public class RenderUnitProvider implements UseProvider {
     private ScriptCache scriptCache;
 
     @Reference
+    private BundledUnitManager bundledUnitManager;
+
+    @Reference
     private ScriptEngineManager scriptEngineManager;
 
     @Reference
@@ -85,6 +89,12 @@ public class RenderUnitProvider implements UseProvider {
     public ProviderOutcome provide(String identifier, RenderContext renderContext, Bindings arguments) {
         if (identifier.endsWith("." + SightlyScriptEngineFactory.EXTENSION)) {
             Bindings globalBindings = renderContext.getBindings();
+            if (bundledUnitManager != null) {
+                RenderUnit renderUnit = bundledUnitManager.getRenderUnit(globalBindings, identifier);
+                if (renderUnit != null) {
+                    return ProviderOutcome.success(renderUnit);
+                }
+            }
             SlingScriptHelper sling = BindingsUtils.getHelper(globalBindings);
             SlingHttpServletRequest request = BindingsUtils.getRequest(globalBindings);
             final Resource renderUnitResource = ScriptUtils.resolveScript(scriptingResourceResolverProvider
