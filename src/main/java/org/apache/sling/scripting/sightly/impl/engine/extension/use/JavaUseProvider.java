@@ -30,7 +30,8 @@ import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.adapter.Adaptable;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.scripting.SlingScriptHelper;
-import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManager;
+import org.apache.sling.models.factory.ModelFactory;
+import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
 import org.apache.sling.scripting.sightly.impl.engine.compiled.SlingHTLMasterCompiler;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.impl.utils.Patterns;
@@ -77,7 +78,10 @@ public class JavaUseProvider implements UseProvider {
     private SlingHTLMasterCompiler slingHTLMasterCompiler;
 
     @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY)
-    private BundledUnitManager bundledUnitManager;
+    private BundledUnitManagerImpl bundledUnitManager;
+
+    @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY)
+    private ModelFactory modelFactory;
 
     @Override
     public ProviderOutcome provide(String identifier, RenderContext renderContext, Bindings arguments) {
@@ -149,11 +153,12 @@ public class JavaUseProvider implements UseProvider {
                                        @NotNull Bindings arguments)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
             InstantiationException {
-            // attempt OSGi service load
+            // OSGi service
             Object result = serviceLoader.getService(cls);
             if (result != null) {
                 return ProviderOutcome.success(result);
             }
+            // adaptable
             Object adaptableCandidate = arguments.get(ADAPTABLE);
             if (adaptableCandidate instanceof Adaptable) {
                 Adaptable adaptable = (Adaptable) adaptableCandidate;
@@ -163,20 +168,37 @@ public class JavaUseProvider implements UseProvider {
                 }
             }
             SlingHttpServletRequest request = BindingsUtils.getRequest(globalBindings);
+            Resource resource = BindingsUtils.getResource(globalBindings);
+            // Sling Model
+            if (modelFactory != null && modelFactory.isModelClass(cls)) {
+                try {
+                    // try to instantiate class via Sling Models (first via request, then via resource)
+                    if (request != null && modelFactory.canCreateFromAdaptable(request, cls)) {
+                        LOG.debug("Trying to instantiate class {} as Sling Model from request.", cls);
+                        return ProviderOutcome.notNullOrFailure(modelFactory.createModel(request, cls));
+                    }
+                    if (resource != null && modelFactory.canCreateFromAdaptable(resource, cls)) {
+                        LOG.debug("Trying to instantiate class {} as Sling Model from resource.", cls);
+                        return ProviderOutcome.notNullOrFailure(modelFactory.createModel(resource, cls));
+                    }
+                    return ProviderOutcome.failure(
+                            new IllegalStateException("Could not adapt the given Sling Model from neither request nor resource: " + cls));
+                } catch (Exception e) {
+                    return ProviderOutcome.failure(e);
+                }
+            }
             if (request != null) {
                 result = request.adaptTo(cls);
             }
-            if (result == null) {
-                Resource resource = BindingsUtils.getResource(globalBindings);
-                if (resource != null) {
-                    result = resource.adaptTo(cls);
-                }
+            if (result == null && resource != null) {
+                result = resource.adaptTo(cls);
             }
             if (result != null) {
                 return ProviderOutcome.success(result);
             } else if (cls.isInterface() || Modifier.isAbstract(cls.getModifiers())) {
                 LOG.debug("Won't attempt to instantiate an interface or abstract class {}", cls.getName());
-                return ProviderOutcome.failure();
+                return ProviderOutcome.failure(new IllegalArgumentException(String.format(" %s represents an interface or an abstract " +
+                        "class which cannot be instantiated.", cls.getName())));
             } else {
                 /*
                  * the object was cached by the class loader but it's not adaptable from {@link Resource} or {@link

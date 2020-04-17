@@ -20,11 +20,11 @@ package org.apache.sling.scripting.sightly.impl.engine.bundled;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 import javax.script.Bindings;
-import javax.script.CompiledScript;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
@@ -38,6 +38,7 @@ import org.apache.sling.scripting.bundle.tracker.TypeProvider;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyCompiledScript;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngine;
+import org.apache.sling.scripting.sightly.engine.BundledUnitManager;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.render.RenderUnit;
 import org.jetbrains.annotations.NotNull;
@@ -55,7 +56,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The {@code BundledUnitManager} is an optional service, which is made available only if the {@link
  * org.apache.sling.scripting.bundle.tracker} APIs are available. This service allows various components to work with {@link
- * org.apache.sling.scripting.bundle.tracker.BundledRenderUnit} instance and perform dependency resolution based on their availability in
+ * BundledRenderUnit} instance and perform dependency resolution based on their availability in
  * the {@link Bindings} maps passed to the HTL Script Engine.
  */
 @Component(
@@ -64,9 +65,9 @@ import org.slf4j.LoggerFactory;
          * this component will register itself as a service only if the org.apache.sling.scripting.bundle.tracker API is present
          */
         )
-public class BundledUnitManager {
+public class BundledUnitManagerImpl implements BundledUnitManager {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(BundledUnitManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BundledUnitManagerImpl.class);
 
     private final ServiceRegistration<?> serviceRegistration;
 
@@ -77,7 +78,7 @@ public class BundledUnitManager {
     private ScriptCache scriptCache;
 
     @Activate
-    public BundledUnitManager(BundleContext bundleContext) {
+    public BundledUnitManagerImpl(BundleContext bundleContext) {
         serviceRegistration = register(bundleContext);
     }
 
@@ -129,35 +130,21 @@ public class BundledUnitManager {
         BundledRenderUnit bundledRenderUnit = getBundledRenderUnit(bindings);
         Resource currentResource = BindingsUtils.getResource(bindings);
         if (currentResource != null && bundledRenderUnit != null) {
-            boolean absolute = identifier.charAt(0) == '/';
             for (TypeProvider provider : bundledRenderUnit.getTypeProviders()) {
                 for (ResourceType type : provider.getBundledRenderUnitCapability().getResourceTypes()) {
-                    StringBuilder renderUnitIdentifier = new StringBuilder(identifier);
-                    if (!absolute) {
-                        renderUnitIdentifier = renderUnitIdentifier.insert(0, type.toString() + "/");
+                    String renderUnitIdentifier = getResourceTypeQualifiedPath(identifier, type);
+                    String renderUnitBundledPath = renderUnitIdentifier;
+                    if (renderUnitBundledPath.startsWith("/")) {
+                        renderUnitBundledPath = renderUnitBundledPath.substring(1);
                     }
-                    if (provider.isPrecompiled()) {
-                        String classResourcePath = renderUnitIdentifier.toString();
-                        if (classResourcePath.startsWith("/")) {
-                            classResourcePath = classResourcePath.substring(1);
+                    String className = JavaEscapeHelper.makeJavaPackage(renderUnitBundledPath);
+                    try {
+                        Class<?> clazz = provider.getBundle().loadClass(className);
+                        if (clazz.getSuperclass() == RenderUnit.class) {
+                            return (RenderUnit) clazz.getDeclaredConstructor().newInstance();
                         }
-                        String className = JavaEscapeHelper.makeJavaPackage(classResourcePath);
-                        try {
-                            Class<?> clazz = provider.getBundle().loadClass(className);
-                            if (clazz.getSuperclass() == RenderUnit.class) {
-                                return (RenderUnit) clazz.getDeclaredConstructor().newInstance();
-                            }
-                        } catch (RuntimeException e) {
-                            throw e;
-                        } catch (Exception ignored) {
-                            // do nothing here
-                        }
-                    } else {
-                        String scriptResourcePath = renderUnitIdentifier.toString();
-                        if (scriptResourcePath.startsWith("/")) {
-                            scriptResourcePath = scriptResourcePath.substring(1);
-                        }
-                        URL bundledScriptURL = provider.getBundle().getEntry("javax.script" + "/" + scriptResourcePath);
+                    } catch (ClassNotFoundException e) {
+                        URL bundledScriptURL = provider.getBundle().getEntry("javax.script" + "/" + renderUnitBundledPath);
                         if (bundledScriptURL != null) {
                             try {
                                 SightlyScriptEngine sightlyScriptEngine = (SightlyScriptEngine) scriptEngineManager.getEngineByName(
@@ -167,37 +154,59 @@ public class BundledUnitManager {
                                     if (cachedScript != null) {
                                         return ((SightlyCompiledScript) cachedScript.getCompiledScript()).getRenderUnit();
                                     } else {
-                                        final String finalRenderUnitIdentifier = renderUnitIdentifier.toString();
                                         try (ScriptNameAwareReader reader =
                                                      new ScriptNameAwareReader(new InputStreamReader(bundledScriptURL.openStream(),
-                                                             StandardCharsets.UTF_8),
-                                                             finalRenderUnitIdentifier)) {
+                                                             StandardCharsets.UTF_8), renderUnitIdentifier)) {
                                             SightlyCompiledScript compiledScript =
                                                     (SightlyCompiledScript) sightlyScriptEngine.compile(reader);
-                                            scriptCache.putScript(new CachedScript() {
-                                                @Override
-                                                public String getScriptPath() {
-                                                    return bundledScriptURL.toExternalForm();
-                                                }
-
-                                                @Override
-                                                public CompiledScript getCompiledScript() {
-                                                    return compiledScript;
-                                                }
-                                            });
                                             return compiledScript.getRenderUnit();
                                         }
                                     }
                                 }
-                            } catch (IOException | ScriptException ignored) {
-
+                            } catch (IOException | ScriptException compileException) {
+                                throw new IllegalStateException(compileException);
                             }
                         }
+                    } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                        throw new IllegalArgumentException(e);
                     }
                 }
             }
         }
         return null;
+    }
+
+    @Override
+    @Nullable
+    public URL getScript(Bindings bindings, String identifier) {
+        BundledRenderUnit bundledRenderUnit = getBundledRenderUnit(bindings);
+        Resource currentResource = BindingsUtils.getResource(bindings);
+        if (currentResource != null && bundledRenderUnit != null) {
+            for (TypeProvider provider : bundledRenderUnit.getTypeProviders()) {
+                for (ResourceType type : provider.getBundledRenderUnitCapability().getResourceTypes()) {
+                    String scriptResourcePath = getResourceTypeQualifiedPath(identifier, type);
+                    URL bundledScriptURL = provider.getBundle().getEntry("javax.script" + "/" + scriptResourcePath);
+                    if (bundledScriptURL != null) {
+                        return bundledScriptURL;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    @NotNull
+    private String getResourceTypeQualifiedPath(String identifier, ResourceType type) {
+        boolean absolute = identifier.charAt(0) == '/';
+        StringBuilder renderUnitIdentifier = new StringBuilder(identifier);
+        if (!absolute) {
+            renderUnitIdentifier = renderUnitIdentifier.insert(0, type.toString() + "/");
+        }
+        String scriptResourcePath = renderUnitIdentifier.toString();
+        if (scriptResourcePath.startsWith("/")) {
+            scriptResourcePath = scriptResourcePath.substring(1);
+        }
+        return scriptResourcePath;
     }
 
     /**
@@ -210,6 +219,7 @@ public class BundledUnitManager {
      * @param bindings the bindings passed initially to the HTL Script Engine
      * @return the {@link BundledRenderUnit}'s classloader if one is found, {@code null} otherwise
      */
+    @Override
     @Nullable
     public ClassLoader getBundledRenderUnitClassloader(Bindings bindings) {
         Object bru = bindings.get(BundledRenderUnit.VARIABLE);
@@ -245,7 +255,9 @@ public class BundledUnitManager {
     private ServiceRegistration<?> register(BundleContext bundleContext) {
         try {
             BundledUnitManager.class.getClassLoader().loadClass("org.apache.sling.scripting.bundle.tracker.BundledRenderUnit");
-            return bundleContext.registerService(BundledUnitManager.class, this, null);
+            return bundleContext.registerService(new String[] {BundledUnitManager.class.getName(),
+                            BundledUnitManagerImpl.class.getName()}, this,
+                    null);
         } catch (ClassNotFoundException e) {
             LOGGER.info("No support for bundled RenderUnits.");
         }

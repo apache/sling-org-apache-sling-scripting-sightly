@@ -22,7 +22,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
 
 import org.apache.sling.scripting.api.AbstractScriptEngineFactory;
-import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManager;
+import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
 import org.apache.sling.scripting.sightly.impl.engine.compiled.SlingHTLMasterCompiler;
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
@@ -49,7 +49,7 @@ public class SightlyScriptEngineFactory extends AbstractScriptEngineFactory {
     private SlingHTLMasterCompiler slingHTLMasterCompiler;
 
     @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY)
-    private BundledUnitManager bundledUnitManager;
+    private BundledUnitManagerImpl bundledUnitManager;
 
     @Reference
     private ExtensionRegistryService extensionRegistryService;

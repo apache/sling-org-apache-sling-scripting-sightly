@@ -33,6 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 
 import javax.script.Bindings;
+import javax.script.CompiledScript;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
@@ -47,6 +48,8 @@ import org.apache.sling.commons.classloader.DynamicClassLoaderManager;
 import org.apache.sling.commons.compiler.JavaCompiler;
 import org.apache.sling.commons.compiler.Options;
 import org.apache.sling.commons.compiler.source.JavaEscapeHelper;
+import org.apache.sling.scripting.api.CachedScript;
+import org.apache.sling.scripting.api.ScriptCache;
 import org.apache.sling.scripting.api.ScriptNameAware;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
 import org.apache.sling.scripting.sightly.SightlyException;
@@ -99,6 +102,9 @@ public class SlingHTLMasterCompiler {
 
     @Reference
     private ResourceBackedPojoChangeMonitor resourceBackedPojoChangeMonitor;
+
+    @Reference
+    private ScriptCache scriptCache;
 
     private static final String NO_SCRIPT = "NO_SCRIPT";
     private static final String JAVA_EXTENSION = ".java";
@@ -204,6 +210,10 @@ public class SlingHTLMasterCompiler {
                 sName = getScriptName(scriptContext);
             }
             final String scriptName = sName;
+            CachedScript cachedScript = scriptCache.getScript(scriptName);
+            if (cachedScript != null && cachedScript.getCompiledScript() instanceof SightlyCompiledScript) {
+                return (SightlyCompiledScript) cachedScript.getCompiledScript();
+            }
             CompilationUnit compilationUnit = new CompilationUnit() {
                 @Override
                 public String getScriptName() {
@@ -241,7 +251,19 @@ public class SlingHTLMasterCompiler {
             String javaSourceCode = javaClassBackendCompiler.build(sourceIdentifier);
             Object renderUnit = compileSource(sourceIdentifier, javaSourceCode);
             if (renderUnit instanceof RenderUnit) {
-                return new SightlyCompiledScript(engine, (RenderUnit) renderUnit);
+                SightlyCompiledScript compiledScript = new SightlyCompiledScript(engine, (RenderUnit) renderUnit);
+                scriptCache.putScript(new CachedScript() {
+                    @Override
+                    public String getScriptPath() {
+                        return scriptName;
+                    }
+
+                    @Override
+                    public CompiledScript getCompiledScript() {
+                        return compiledScript;
+                    }
+                });
+                return compiledScript;
             } else {
                 throw new SightlyException("Expected a RenderUnit.");
             }

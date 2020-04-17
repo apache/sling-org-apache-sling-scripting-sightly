@@ -28,7 +28,8 @@ import javax.script.ScriptContext;
 import javax.script.ScriptException;
 
 import org.apache.sling.scripting.api.AbstractSlingScriptEngine;
-import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManager;
+import org.apache.sling.scripting.sightly.engine.BundledUnitManager;
+import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
 import org.apache.sling.scripting.sightly.impl.engine.compiled.SlingHTLMasterCompiler;
 import org.apache.sling.scripting.sightly.render.RenderUnit;
 import org.slf4j.Logger;
@@ -42,11 +43,11 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
     private static final Logger LOGGER = LoggerFactory.getLogger(SightlyScriptEngine.class);
 
     private SlingHTLMasterCompiler slingHTLMasterCompiler;
-    private BundledUnitManager bundledUnitManager;
+    private BundledUnitManagerImpl bundledUnitManager;
     private ExtensionRegistryService extensionRegistryService;
 
     SightlyScriptEngine(SightlyScriptEngineFactory factory, ExtensionRegistryService extensionRegistryService,
-                        SlingHTLMasterCompiler slingHTLMasterCompiler, BundledUnitManager bundledUnitManager) {
+                        SlingHTLMasterCompiler slingHTLMasterCompiler, BundledUnitManagerImpl bundledUnitManager) {
         super(factory);
         this.extensionRegistryService = extensionRegistryService;
         this.slingHTLMasterCompiler = slingHTLMasterCompiler;

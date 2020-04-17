@@ -218,6 +218,12 @@
             <version>2.2.8</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.sling</groupId>
+            <artifactId>org.apache.sling.models.api</artifactId>
+            <version>1.3.8</version>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- javax.servlet, remove if we do not need a response wrapper -->
         <dependency>

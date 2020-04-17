@@ -12,4 +12,5 @@ Import-Package:     org.apache.sling.scripting.sightly.compiler.*;resolution:=op
                     org.apache.sling.commons.compiler.*;resolution:=optional, \\
                     org.apache.sling.commons.classloader.*;resolution:=optional, \\
                     org.apache.sling.scripting.bundle.tracker.*;resolution:=optional, \\
+                    org.apache.sling.models.*;resolution:=optional, \\
                     *
