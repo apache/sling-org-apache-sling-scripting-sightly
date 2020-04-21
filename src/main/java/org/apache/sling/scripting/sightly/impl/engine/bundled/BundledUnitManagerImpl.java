@@ -23,22 +23,29 @@ import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 import javax.script.Bindings;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.resource.ResourceUtil;
 import org.apache.sling.commons.compiler.source.JavaEscapeHelper;
 import org.apache.sling.scripting.api.CachedScript;
 import org.apache.sling.scripting.api.ScriptCache;
+import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
 import org.apache.sling.scripting.bundle.tracker.BundledRenderUnit;
 import org.apache.sling.scripting.bundle.tracker.ResourceType;
 import org.apache.sling.scripting.bundle.tracker.TypeProvider;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
+import org.apache.sling.scripting.sightly.engine.BundledUnitManager;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyCompiledScript;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngine;
-import org.apache.sling.scripting.sightly.engine.BundledUnitManager;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.render.RenderUnit;
 import org.jetbrains.annotations.NotNull;
@@ -76,6 +83,9 @@ public class BundledUnitManagerImpl implements BundledUnitManager {
 
     @Reference
     private ScriptCache scriptCache;
+
+    @Reference
+    private ScriptingResourceResolverProvider scriptingResourceResolverProvider;
 
     @Activate
     public BundledUnitManagerImpl(BundleContext bundleContext) {
@@ -129,10 +139,25 @@ public class BundledUnitManagerImpl implements BundledUnitManager {
     public RenderUnit getRenderUnit(@NotNull Bindings bindings, @NotNull String identifier) {
         BundledRenderUnit bundledRenderUnit = getBundledRenderUnit(bindings);
         Resource currentResource = BindingsUtils.getResource(bindings);
+        List<String> searchPathRelativeLocations = new ArrayList<>();
+        if (!identifier.startsWith("/")) {
+            ResourceResolver scriptingResourceResolver = scriptingResourceResolverProvider.getRequestScopedResourceResolver();
+            for (String searchPath : scriptingResourceResolver.getSearchPath()) {
+                searchPathRelativeLocations.add(ResourceUtil.normalize(searchPath + "/" + identifier));
+            }
+        }
         if (currentResource != null && bundledRenderUnit != null) {
             for (TypeProvider provider : bundledRenderUnit.getTypeProviders()) {
-                for (ResourceType type : provider.getBundledRenderUnitCapability().getResourceTypes()) {
-                    String renderUnitIdentifier = getResourceTypeQualifiedPath(identifier, type);
+                Set<String> locations = new LinkedHashSet<>();
+                if (!identifier.startsWith("/")) {
+                    for (ResourceType type : provider.getBundledRenderUnitCapability().getResourceTypes()) {
+                        locations.add(getResourceTypeQualifiedPath(identifier, type));
+                    }
+                    locations.addAll(searchPathRelativeLocations);
+                } else {
+                    locations.add(identifier);
+                }
+                for (String renderUnitIdentifier : locations) {
                     String renderUnitBundledPath = renderUnitIdentifier;
                     if (renderUnitBundledPath.startsWith("/")) {
                         renderUnitBundledPath = renderUnitBundledPath.substring(1);
@@ -185,7 +210,11 @@ public class BundledUnitManagerImpl implements BundledUnitManager {
             for (TypeProvider provider : bundledRenderUnit.getTypeProviders()) {
                 for (ResourceType type : provider.getBundledRenderUnitCapability().getResourceTypes()) {
                     String scriptResourcePath = getResourceTypeQualifiedPath(identifier, type);
-                    URL bundledScriptURL = provider.getBundle().getEntry("javax.script" + "/" + scriptResourcePath);
+                    String scriptBundledPath = scriptResourcePath;
+                    if (scriptBundledPath.startsWith("/")) {
+                        scriptBundledPath = scriptBundledPath.substring(1);
+                    }
+                    URL bundledScriptURL = provider.getBundle().getEntry("javax.script/" + scriptBundledPath);
                     if (bundledScriptURL != null) {
                         return bundledScriptURL;
                     }
@@ -196,17 +225,11 @@ public class BundledUnitManagerImpl implements BundledUnitManager {
     }
 
     @NotNull
-    private String getResourceTypeQualifiedPath(String identifier, ResourceType type) {
-        boolean absolute = identifier.charAt(0) == '/';
-        StringBuilder renderUnitIdentifier = new StringBuilder(identifier);
-        if (!absolute) {
-            renderUnitIdentifier = renderUnitIdentifier.insert(0, type.toString() + "/");
+    private String getResourceTypeQualifiedPath(@NotNull String identifier, @NotNull ResourceType type) {
+        if (!identifier.startsWith("/")) {
+            return type.toString() + "/" + identifier;
         }
-        String scriptResourcePath = renderUnitIdentifier.toString();
-        if (scriptResourcePath.startsWith("/")) {
-            scriptResourcePath = scriptResourcePath.substring(1);
-        }
-        return scriptResourcePath;
+        return identifier;
     }
 
     /**
