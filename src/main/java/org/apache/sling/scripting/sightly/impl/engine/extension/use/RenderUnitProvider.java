@@ -49,6 +49,8 @@ import org.apache.sling.scripting.sightly.use.UseProvider;
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 
 /**
@@ -76,7 +78,7 @@ public class RenderUnitProvider implements UseProvider {
     @Reference
     private ScriptCache scriptCache;
 
-    @Reference
+    @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption=ReferencePolicyOption.GREEDY)
     private BundledUnitManagerImpl bundledUnitManager;
 
     @Reference
