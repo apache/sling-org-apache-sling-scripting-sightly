@@ -42,6 +42,7 @@ import org.apache.sling.api.scripting.SlingScript;
 import org.apache.sling.scripting.api.CachedScript;
 import org.apache.sling.scripting.api.ScriptCache;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
+import org.apache.sling.scripting.core.BundledRenderUnit;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngineFactory;
 import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
@@ -112,7 +113,7 @@ public class ScriptUseProvider implements UseProvider {
             URL script = bundledUnitManager.getScript(bindings, scriptName);
             if (script != null) {
                 String scriptUrlAsString = script.toExternalForm();
-                bindings.remove("org.apache.sling.scripting.bundle.tracker.BundledRenderUnit");
+                bindings.remove(BundledRenderUnit.VARIABLE);
                 bindings.put(ScriptEngine.FILENAME, scriptUrlAsString);
                 try {
                     ScriptEngine scriptEngine = scriptEngineManager.getEngineByExtension(extension);
