@@ -39,7 +39,7 @@ import org.apache.sling.commons.compiler.source.JavaEscapeHelper;
 import org.apache.sling.scripting.api.CachedScript;
 import org.apache.sling.scripting.api.ScriptCache;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
-import org.apache.sling.scripting.core.BundledRenderUnit;
+import org.apache.sling.scripting.api.bundled.BundledRenderUnit;
 import org.apache.sling.servlets.resolver.bundle.tracker.ResourceType;
 import org.apache.sling.servlets.resolver.bundle.tracker.TypeProvider;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
  * BundledRenderUnit} instance and perform dependency resolution based on their availability in
  * the {@link Bindings} maps passed to the HTL Script Engine.
  */
-@Component
+@Component(service = {BundledUnitManagerImpl.class, BundledUnitManager.class})
 public class BundledUnitManagerImpl implements BundledUnitManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BundledUnitManagerImpl.class);

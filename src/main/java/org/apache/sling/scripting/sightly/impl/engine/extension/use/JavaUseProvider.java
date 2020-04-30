@@ -77,7 +77,7 @@ public class JavaUseProvider implements UseProvider {
     @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY)
     private SlingHTLMasterCompiler slingHTLMasterCompiler;
 
-    @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY)
+    @Reference
     private BundledUnitManagerImpl bundledUnitManager;
 
     @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY)
@@ -95,26 +95,24 @@ public class JavaUseProvider implements UseProvider {
 
         try {
             Exception failure = null;
-            if (bundledUnitManager != null) {
-                ClassLoader unitClassLoader = bundledUnitManager.getBundledRenderUnitClassloader(globalBindings);
-                if (unitClassLoader != null) {
-                    try {
-                        String className = identifier;
-                        if (className.indexOf('.') < 0) {
-                            // the class name is not fully qualified; need to prepend the package name of the current rendering unit
-                            RenderUnit renderUnit = bundledUnitManager.getRenderUnit(globalBindings);
-                            if (renderUnit != null) {
-                                className = renderUnit.getClass().getPackage().getName() + "." + className;
-                            }
+            ClassLoader unitClassLoader = bundledUnitManager.getBundledRenderUnitClassloader(globalBindings);
+            if (unitClassLoader != null) {
+                try {
+                    String className = identifier;
+                    if (className.indexOf('.') < 0) {
+                        // the class name is not fully qualified; need to prepend the package name of the current rendering unit
+                        RenderUnit renderUnit = bundledUnitManager.getRenderUnit(globalBindings);
+                        if (renderUnit != null) {
+                            className = renderUnit.getClass().getPackage().getName() + "." + className;
                         }
-                        Class<?> clazz = unitClassLoader.loadClass(className);
-                        return loadObject(clazz, cls -> bundledUnitManager.getServiceForBundledRenderUnit(globalBindings, clazz),
-                                globalBindings,
-                                arguments);
-                    } catch (Exception e) {
-                        // maybe the class will actually come from the repository
-                        failure = e;
                     }
+                    Class<?> clazz = unitClassLoader.loadClass(className);
+                    return loadObject(clazz, cls -> bundledUnitManager.getServiceForBundledRenderUnit(globalBindings, clazz),
+                            globalBindings,
+                            arguments);
+                } catch (Exception e) {
+                    // maybe the class will actually come from the repository
+                    failure = e;
                 }
             }
             if (slingHTLMasterCompiler != null) {

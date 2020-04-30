@@ -48,7 +48,7 @@ public class SightlyScriptEngineFactory extends AbstractScriptEngineFactory {
     @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY)
     private SlingHTLMasterCompiler slingHTLMasterCompiler;
 
-    @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY)
+    @Reference
     private BundledUnitManagerImpl bundledUnitManager;
 
     @Reference
