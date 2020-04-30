@@ -39,7 +39,7 @@ import org.apache.sling.commons.compiler.source.JavaEscapeHelper;
 import org.apache.sling.scripting.api.CachedScript;
 import org.apache.sling.scripting.api.ScriptCache;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
-import org.apache.sling.scripting.api.bundled.BundledRenderUnit;
+import org.apache.sling.servlets.resolver.bundle.tracker.BundledRenderUnit;
 import org.apache.sling.servlets.resolver.bundle.tracker.ResourceType;
 import org.apache.sling.servlets.resolver.bundle.tracker.TypeProvider;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
