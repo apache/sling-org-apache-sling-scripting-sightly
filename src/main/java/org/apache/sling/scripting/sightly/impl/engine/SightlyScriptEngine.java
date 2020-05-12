@@ -28,7 +28,6 @@ import javax.script.ScriptContext;
 import javax.script.ScriptException;
 
 import org.apache.sling.scripting.api.AbstractSlingScriptEngine;
-import org.apache.sling.scripting.sightly.engine.BundledUnitManager;
 import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
 import org.apache.sling.scripting.sightly.impl.engine.compiled.SlingHTLMasterCompiler;
 import org.apache.sling.scripting.sightly.render.RenderUnit;
@@ -72,15 +71,14 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
         checkArguments(reader, scriptContext);
         try {
             SightlyCompiledScript compiledScript = null;
-            if (bundledUnitManager != null) {
-                Bindings bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
-                if (bindings != null) {
-                    RenderUnit renderUnit = bundledUnitManager.getRenderUnit(bindings);
-                    if (renderUnit != null) {
-                        compiledScript = new SightlyCompiledScript(this, renderUnit);
-                    }
+            Bindings bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
+            if (bindings != null) {
+                RenderUnit renderUnit = bundledUnitManager.getRenderUnit(bindings);
+                if (renderUnit != null) {
+                    compiledScript = new SightlyCompiledScript(this, renderUnit);
                 }
-            } else if (slingHTLMasterCompiler != null) {
+            }
+            if (compiledScript == null && slingHTLMasterCompiler != null) {
                 compiledScript = slingHTLMasterCompiler.compileHTLScript(this, reader, scriptContext);
             }
             if (compiledScript != null) {

@@ -19,7 +19,6 @@
 
 package org.apache.sling.scripting.sightly.impl.engine.extension.use;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -27,12 +26,8 @@ import java.nio.charset.StandardCharsets;
 import javax.script.Bindings;
 import javax.script.Compilable;
 import javax.script.CompiledScript;
-import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-import javax.script.SimpleBindings;
-import javax.script.SimpleScriptContext;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -42,6 +37,7 @@ import org.apache.sling.api.scripting.SlingScript;
 import org.apache.sling.scripting.api.CachedScript;
 import org.apache.sling.scripting.api.ScriptCache;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
+import org.apache.sling.servlets.resolver.bundle.tracker.BundledRenderUnit;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngineFactory;
 import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
@@ -53,8 +49,6 @@ import org.apache.sling.scripting.sightly.use.UseProvider;
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +85,7 @@ public class ScriptUseProvider implements UseProvider {
     @Reference
     private ScriptingResourceResolverProvider scriptingResourceResolverProvider;
 
-    @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY)
+    @Reference
     private BundledUnitManagerImpl bundledUnitManager;
 
     @Reference
@@ -108,39 +102,37 @@ public class ScriptUseProvider implements UseProvider {
         if (extension == null || extension.equals(SightlyScriptEngineFactory.EXTENSION)) {
             return ProviderOutcome.failure();
         }
-        if (bundledUnitManager != null) {
-            URL script = bundledUnitManager.getScript(bindings, scriptName);
-            if (script != null) {
-                String scriptUrlAsString = script.toExternalForm();
-                bindings.remove("org.apache.sling.scripting.bundle.tracker.BundledRenderUnit");
-                bindings.put(ScriptEngine.FILENAME, scriptUrlAsString);
-                try {
-                    ScriptEngine scriptEngine = scriptEngineManager.getEngineByExtension(extension);
-                    if (scriptEngine != null) {
-                        if (scriptEngine instanceof Compilable) {
-                            CompiledScript compiledScript;
-                            CachedScript cachedScript = scriptCache.getScript(scriptUrlAsString);
-                            if (cachedScript == null) {
-                                Compilable compilableScriptEngine = (Compilable) scriptEngine;
-                                ScriptNameAwareReader reader =
-                                        new ScriptNameAwareReader(new StringReader(IOUtils.toString(script, StandardCharsets.UTF_8)),
-                                                scriptUrlAsString);
-                                compiledScript = compilableScriptEngine.compile(reader);
-                            } else {
-                                compiledScript = cachedScript.getCompiledScript();
-                            }
-                            return ProviderOutcome.notNullOrFailure(compiledScript.eval(bindings));
-                        } else {
+        URL script = bundledUnitManager.getScript(bindings, scriptName);
+        if (script != null) {
+            String scriptUrlAsString = script.toExternalForm();
+            bindings.remove(BundledRenderUnit.VARIABLE);
+            bindings.put(ScriptEngine.FILENAME, scriptUrlAsString);
+            try {
+                ScriptEngine scriptEngine = scriptEngineManager.getEngineByExtension(extension);
+                if (scriptEngine != null) {
+                    if (scriptEngine instanceof Compilable) {
+                        CompiledScript compiledScript;
+                        CachedScript cachedScript = scriptCache.getScript(scriptUrlAsString);
+                        if (cachedScript == null) {
+                            Compilable compilableScriptEngine = (Compilable) scriptEngine;
                             ScriptNameAwareReader reader =
                                     new ScriptNameAwareReader(new StringReader(IOUtils.toString(script, StandardCharsets.UTF_8)),
                                             scriptUrlAsString);
-                            return ProviderOutcome
-                                    .notNullOrFailure(scriptEngine.eval(reader, bindings));
+                            compiledScript = compilableScriptEngine.compile(reader);
+                        } else {
+                            compiledScript = cachedScript.getCompiledScript();
                         }
+                        return ProviderOutcome.notNullOrFailure(compiledScript.eval(bindings));
+                    } else {
+                        ScriptNameAwareReader reader =
+                                new ScriptNameAwareReader(new StringReader(IOUtils.toString(script, StandardCharsets.UTF_8)),
+                                        scriptUrlAsString);
+                        return ProviderOutcome
+                                .notNullOrFailure(scriptEngine.eval(reader, bindings));
                     }
-                } catch (Exception e) {
-                    return ProviderOutcome.failure(e);
                 }
+            } catch (Exception e) {
+                return ProviderOutcome.failure(e);
             }
         }
         Resource scriptResource = ScriptUtils.resolveScript(scriptingResourceResolverProvider.getRequestScopedResourceResolver(),

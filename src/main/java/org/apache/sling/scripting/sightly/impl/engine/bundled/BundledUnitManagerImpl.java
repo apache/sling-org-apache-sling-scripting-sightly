@@ -39,9 +39,9 @@ import org.apache.sling.commons.compiler.source.JavaEscapeHelper;
 import org.apache.sling.scripting.api.CachedScript;
 import org.apache.sling.scripting.api.ScriptCache;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
-import org.apache.sling.scripting.bundle.tracker.BundledRenderUnit;
-import org.apache.sling.scripting.bundle.tracker.ResourceType;
-import org.apache.sling.scripting.bundle.tracker.TypeProvider;
+import org.apache.sling.servlets.resolver.bundle.tracker.BundledRenderUnit;
+import org.apache.sling.servlets.resolver.bundle.tracker.ResourceType;
+import org.apache.sling.servlets.resolver.bundle.tracker.TypeProvider;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.engine.BundledUnitManager;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyCompiledScript;
@@ -50,33 +50,21 @@ import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.render.RenderUnit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.wiring.BundleWiring;
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@code BundledUnitManager} is an optional service, which is made available only if the {@link
- * org.apache.sling.scripting.bundle.tracker} APIs are available. This service allows various components to work with {@link
+ * This service allows various components to work with {@link
  * BundledRenderUnit} instance and perform dependency resolution based on their availability in
  * the {@link Bindings} maps passed to the HTL Script Engine.
  */
-@Component(
-        service = {}
-        /*
-         * this component will register itself as a service only if the org.apache.sling.scripting.bundle.tracker API is present
-         */
-        )
+@Component(service = {BundledUnitManagerImpl.class, BundledUnitManager.class})
 public class BundledUnitManagerImpl implements BundledUnitManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BundledUnitManagerImpl.class);
-
-    private final ServiceRegistration<?> serviceRegistration;
 
     @Reference
     private ScriptEngineManager scriptEngineManager;
@@ -86,18 +74,6 @@ public class BundledUnitManagerImpl implements BundledUnitManager {
 
     @Reference
     private ScriptingResourceResolverProvider scriptingResourceResolverProvider;
-
-    @Activate
-    public BundledUnitManagerImpl(BundleContext bundleContext) {
-        serviceRegistration = register(bundleContext);
-    }
-
-    @Deactivate
-    public void deactivate() {
-        if (serviceRegistration != null) {
-            serviceRegistration.unregister();
-        }
-    }
 
 
     /**
@@ -271,18 +247,6 @@ public class BundledUnitManagerImpl implements BundledUnitManager {
         if (bru instanceof BundledRenderUnit) {
             BundledRenderUnit bundledRenderUnit = (BundledRenderUnit) bru;
             return bundledRenderUnit.getService(clazz.getName());
-        }
-        return null;
-    }
-
-    private ServiceRegistration<?> register(BundleContext bundleContext) {
-        try {
-            BundledUnitManager.class.getClassLoader().loadClass("org.apache.sling.scripting.bundle.tracker.BundledRenderUnit");
-            return bundleContext.registerService(new String[] {BundledUnitManager.class.getName(),
-                            BundledUnitManagerImpl.class.getName()}, this,
-                    null);
-        } catch (ClassNotFoundException e) {
-            LOGGER.info("No support for bundled RenderUnits.");
         }
         return null;
     }

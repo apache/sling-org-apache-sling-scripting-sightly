@@ -78,7 +78,7 @@ public class RenderUnitProvider implements UseProvider {
     @Reference
     private ScriptCache scriptCache;
 
-    @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption=ReferencePolicyOption.GREEDY)
+    @Reference
     private BundledUnitManagerImpl bundledUnitManager;
 
     @Reference
@@ -91,11 +91,9 @@ public class RenderUnitProvider implements UseProvider {
     public ProviderOutcome provide(String identifier, RenderContext renderContext, Bindings arguments) {
         if (identifier.endsWith("." + SightlyScriptEngineFactory.EXTENSION)) {
             Bindings globalBindings = renderContext.getBindings();
-            if (bundledUnitManager != null) {
-                RenderUnit renderUnit = bundledUnitManager.getRenderUnit(globalBindings, identifier);
-                if (renderUnit != null) {
-                    return ProviderOutcome.success(renderUnit);
-                }
+            RenderUnit renderUnit = bundledUnitManager.getRenderUnit(globalBindings, identifier);
+            if (renderUnit != null) {
+                return ProviderOutcome.success(renderUnit);
             }
             SlingScriptHelper sling = BindingsUtils.getHelper(globalBindings);
             SlingHttpServletRequest request = BindingsUtils.getRequest(globalBindings);
@@ -117,7 +115,6 @@ public class RenderUnitProvider implements UseProvider {
                             .getScript().getScriptResource().getPath()));
                 }
             }
-            RenderUnit renderUnit;
             try {
                 CachedScript cachedScript = scriptCache.getScript(renderUnitResource.getPath());
                 final SightlyCompiledScript compiledScript;
