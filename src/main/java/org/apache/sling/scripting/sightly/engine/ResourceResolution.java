@@ -63,7 +63,7 @@ public final class ResourceResolution {
         }
         Resource internalBase = null;
         if (base != null) {
-            if ("nt:file".equals(base.getResourceType())) {
+            if ("nt:file".equals(base.getResourceType()) || "true".equalsIgnoreCase((String) base.getResourceMetadata().get("sling.servlet.resource"))) {
                 internalBase = retrieveParent(base);
             } else {
                 internalBase = base;
