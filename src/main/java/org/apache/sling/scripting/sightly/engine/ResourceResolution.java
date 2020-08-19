@@ -17,11 +17,14 @@
 
 package org.apache.sling.scripting.sightly.engine;
 
+import javax.servlet.Servlet;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceUtil;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Utility class which is used by the HTL engine &amp; extensions to resolve resources.
@@ -54,20 +57,20 @@ public final class ResourceResolution {
      * @see ResourceResolver#getSearchPath()
      */
     public static Resource getResourceFromSearchPath(Resource base, String path) {
+        if (base == null || path == null) {
+            return null;
+        }
         if (path.startsWith("/")) {
-            Resource resource = base.getResourceResolver().getResource(path);
+            Resource resource = getScriptResource(base.getResourceResolver(), path);
             if (resource != null) {
                 return searchPathChecked(resource);
             }
-            return null;
         }
-        Resource internalBase = null;
-        if (base != null) {
-            if ("nt:file".equals(base.getResourceType()) || "true".equalsIgnoreCase((String) base.getResourceMetadata().get("sling.servlet.resource"))) {
-                internalBase = retrieveParent(base);
-            } else {
-                internalBase = base;
-            }
+        Resource internalBase;
+        if ("nt:file".equals(base.getResourceType()) || base.adaptTo(Servlet.class) != null) {
+            internalBase = base.getParent();
+        } else {
+            internalBase = base;
         }
         return resolveComponentInternal(internalBase, path);
     }
@@ -83,20 +86,12 @@ public final class ResourceResolution {
      * @return the resource identified by the {@code request} or {@code null} if no resource was found
      */
     public static Resource getResourceForRequest(ResourceResolver resolver, SlingHttpServletRequest request) {
+        if (resolver == null || request == null) {
+            return null;
+        }
         String resourceType = request.getResource().getResourceType();
         if (StringUtils.isNotEmpty(resourceType)) {
-            if (resourceType.startsWith("/")) {
-                return resolver.getResource(resourceType);
-            }
-            for (String searchPath : resolver.getSearchPath()) {
-                String componentPath = ResourceUtil.normalize(searchPath + "/" + resourceType);
-                if (componentPath != null) {
-                    Resource componentResource = resolver.getResource(componentPath);
-                    if (componentResource != null) {
-                        return componentResource;
-                    }
-                }
-            }
+            return getScriptResource(resolver, resourceType);
         }
         return null;
     }
@@ -125,7 +120,15 @@ public final class ResourceResolution {
     private static Resource recursiveResolution(Resource base, String path) {
         ResourceResolver resolver = base.getResourceResolver();
         for (int iteration = 0; iteration < RECURSION_LIMIT; iteration++) {
-            Resource resource = resolver.getResource(base, path);
+            Resource resource = null;
+            if (path.startsWith("/")) {
+                resource = getScriptResource(resolver, path);
+            } else {
+                String normalizedPath = ResourceUtil.normalize(base.getPath() + "/" + path);
+                if (normalizedPath != null) {
+                    resource = getScriptResource(resolver, normalizedPath);
+                }
+            }
             if (resource != null) {
                 return resource;
             }
@@ -167,7 +170,7 @@ public final class ResourceResolution {
         if (superType == null) {
             return null;
         }
-        return resolver.getResource(superType);
+        return getScriptResource(resolver, superType);
     }
 
     private static Resource searchPathChecked(Resource resource) {
@@ -178,11 +181,21 @@ public final class ResourceResolution {
         return resource;
     }
 
-    private static Resource retrieveParent(Resource resource) {
-        String parentPath = ResourceUtil.getParent(resource.getPath());
-        if (parentPath == null) {
-            return null;
-        }
-        return resource.getResourceResolver().getResource(parentPath);
+    private static Resource getScriptResource(@NotNull ResourceResolver resourceResolver, @NotNull String path) {
+         if (path.startsWith("/")) {
+             Resource resource = resourceResolver.resolve(path);
+             if (ResourceUtil.isNonExistingResource(resource)) {
+                 return null;
+             }
+             return resource;
+         } else {
+             for (String searchPath : resourceResolver.getSearchPath()) {
+                 Resource resource = resourceResolver.resolve(searchPath + path);
+                 if (!ResourceUtil.isNonExistingResource(resource)) {
+                     return resource;
+                 }
+             }
+         }
+         return null;
     }
 }

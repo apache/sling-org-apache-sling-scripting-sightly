@@ -31,10 +31,8 @@ public class ScriptUtils {
         Resource result = ResourceResolution.getResourceFromSearchPath(caller, scriptIdentifier);
         if (result == null) {
             SlingScriptHelper sling = BindingsUtils.getHelper(renderContext.getBindings());
-            if (sling.getScript() != null) {
-                caller = resolver.getResource(sling.getScript().getScriptResource().getPath());
-                result = ResourceResolution.getResourceFromSearchPath(caller, scriptIdentifier);
-            }
+            caller = sling.getScript().getScriptResource();
+            result = ResourceResolution.getResourceFromSearchPath(caller, scriptIdentifier);
         }
         return result;
     }

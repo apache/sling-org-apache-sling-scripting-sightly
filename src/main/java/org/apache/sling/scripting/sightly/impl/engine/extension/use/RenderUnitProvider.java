@@ -49,8 +49,6 @@ import org.apache.sling.scripting.sightly.use.UseProvider;
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 
 /**
@@ -91,15 +89,16 @@ public class RenderUnitProvider implements UseProvider {
     public ProviderOutcome provide(String identifier, RenderContext renderContext, Bindings arguments) {
         if (identifier.endsWith("." + SightlyScriptEngineFactory.EXTENSION)) {
             Bindings globalBindings = renderContext.getBindings();
-            RenderUnit renderUnit = bundledUnitManager.getRenderUnit(globalBindings, identifier);
-            if (renderUnit != null) {
-                return ProviderOutcome.success(renderUnit);
-            }
             SlingScriptHelper sling = BindingsUtils.getHelper(globalBindings);
             SlingHttpServletRequest request = BindingsUtils.getRequest(globalBindings);
             final Resource renderUnitResource = ScriptUtils.resolveScript(scriptingResourceResolverProvider
                     .getRequestScopedResourceResolver(), renderContext, identifier);
             if (renderUnitResource == null) {
+                // attempt to find a bundled render unit that does not expose a servlet resource via the search paths
+                RenderUnit renderUnit = bundledUnitManager.getRenderUnit(globalBindings, identifier);
+                if (renderUnit != null) {
+                    return ProviderOutcome.success(renderUnit);
+                }
                 Resource caller = ResourceResolution.getResourceForRequest(request.getResourceResolver(), request);
                 if (caller != null) {
                     String resourceSuperType = caller.getResourceSuperType();
@@ -116,6 +115,13 @@ public class RenderUnitProvider implements UseProvider {
                 }
             }
             try {
+                if ("true".equalsIgnoreCase((String) renderUnitResource.getResourceMetadata().get("sling.servlet.resource"))) {
+                    // bundled dependency
+                    RenderUnit renderUnit = bundledUnitManager.getRenderUnit(globalBindings, identifier);
+                    if (renderUnit != null) {
+                        return ProviderOutcome.success(renderUnit);
+                    }
+                }
                 CachedScript cachedScript = scriptCache.getScript(renderUnitResource.getPath());
                 final SightlyCompiledScript compiledScript;
                 if (cachedScript != null) {
@@ -146,8 +152,7 @@ public class RenderUnitProvider implements UseProvider {
                         }
                     });
                 }
-                renderUnit = compiledScript.getRenderUnit();
-                return ProviderOutcome.success(renderUnit);
+                return ProviderOutcome.success(compiledScript.getRenderUnit());
             } catch (Exception e) {
                 return ProviderOutcome.failure(e);
             }
