@@ -25,10 +25,14 @@ import org.apache.sling.scripting.api.AbstractScriptEngineFactory;
 import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
 import org.apache.sling.scripting.sightly.impl.engine.compiled.SlingHTLMasterCompiler;
 import org.osgi.framework.Constants;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 /**
  * HTL template engine factory
@@ -54,6 +58,9 @@ public class SightlyScriptEngineFactory extends AbstractScriptEngineFactory {
     @Reference
     private ExtensionRegistryService extensionRegistryService;
 
+    @Reference
+    private SightlyEngineConfiguration configuration;
+
     public final static String SHORT_NAME = "sightly";
     public final static String EXTENSION = "html";
 
@@ -78,5 +85,9 @@ public class SightlyScriptEngineFactory extends AbstractScriptEngineFactory {
     @Override
     public ScriptEngine getScriptEngine() {
         return new SightlyScriptEngine(this, extensionRegistryService, slingHTLMasterCompiler, bundledUnitManager);
+    }
+
+    public SightlyEngineConfiguration getConfiguration() {
+        return configuration;
     }
 }

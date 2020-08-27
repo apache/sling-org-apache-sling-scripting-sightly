@@ -31,6 +31,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 /**
  * Holds various HTL engine global configurations.
@@ -39,8 +41,14 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
         service = SightlyEngineConfiguration.class,
         configurationPid = "org.apache.sling.scripting.sightly.impl.engine.SightlyEngineConfiguration"
 )
+@Designate(
+        ocd = SightlyEngineConfiguration.Configuration.class
+)
 public class SightlyEngineConfiguration {
 
+    @ObjectClassDefinition(
+            name = "Apache Sling Scripting HTL Engine Configuration"
+    )
     @interface Configuration {
 
         @AttributeDefinition(
@@ -57,12 +65,23 @@ public class SightlyEngineConfiguration {
         )
         String[] allowedExpressionOptions();
 
+        @AttributeDefinition(
+                name = "Legacy boolean casting",
+                description = "When the legacy boolean casting is enabled, the string 'false', irrespective of its casing, will be casted" +
+                        " to the Boolean false. So will objects whose implementation of the toString() method returns the string 'false'." +
+                        " This is a violation of the HTL specification, but the HTL implementation worked like this from its inception."
+        )
+        boolean legacyBooleanCasting() default true;
+
     }
 
     private String engineVersion = "0";
     private boolean keepGenerated;
     private String bundleSymbolicName = "org.apache.sling.scripting.sightly";
     private Set<String> allowedExpressionOptions;
+    private boolean legacyBooleanCasting;
+
+    public static final boolean LEGACY_BOOLEAN_CASTING_DEFAULT = true;
 
     public String getEngineVersion() {
         return engineVersion;
@@ -82,6 +101,10 @@ public class SightlyEngineConfiguration {
 
     public Set<String> getAllowedExpressionOptions() {
         return allowedExpressionOptions;
+    }
+
+    public boolean legacyBooleanCasting() {
+        return legacyBooleanCasting;
     }
 
     @Activate
@@ -112,5 +135,6 @@ public class SightlyEngineConfiguration {
         }
         keepGenerated = configuration.keepGenerated();
         allowedExpressionOptions = new HashSet<>(Arrays.asList(configuration.allowedExpressionOptions()));
+        legacyBooleanCasting = configuration.legacyBooleanCasting();
     }
 }

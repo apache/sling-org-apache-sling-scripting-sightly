@@ -44,6 +44,7 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
     private SlingHTLMasterCompiler slingHTLMasterCompiler;
     private BundledUnitManagerImpl bundledUnitManager;
     private ExtensionRegistryService extensionRegistryService;
+    private SightlyEngineConfiguration configuration;
 
     SightlyScriptEngine(SightlyScriptEngineFactory factory, ExtensionRegistryService extensionRegistryService,
                         SlingHTLMasterCompiler slingHTLMasterCompiler, BundledUnitManagerImpl bundledUnitManager) {
@@ -51,6 +52,7 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
         this.extensionRegistryService = extensionRegistryService;
         this.slingHTLMasterCompiler = slingHTLMasterCompiler;
         this.bundledUnitManager = bundledUnitManager;
+        this.configuration = factory.getConfiguration();
     }
 
     @Override
@@ -93,6 +95,10 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
 
     public ExtensionRegistryService getExtensionRegistryService() {
         return extensionRegistryService;
+    }
+
+    public SightlyEngineConfiguration getConfiguration() {
+        return configuration;
     }
 
     private void checkArguments(Reader reader, ScriptContext scriptContext) {

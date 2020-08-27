@@ -61,6 +61,8 @@ public class SightlyCompiledScriptTest {
     @Test
     public void testEvalSlingBindings() {
         SightlyScriptEngine scriptEngine = mock(SightlyScriptEngine.class);
+        SightlyEngineConfiguration configuration = new SightlyEngineConfiguration();
+        when(scriptEngine.getConfiguration()).thenReturn(configuration);
         final RenderUnit renderUnit = mock(RenderUnit.class);
         Whitebox.setInternalState(renderUnit, "subTemplates", new HashMap<String, Object>());
         final BundleContext bundleContext = MockOsgi.newBundleContext();

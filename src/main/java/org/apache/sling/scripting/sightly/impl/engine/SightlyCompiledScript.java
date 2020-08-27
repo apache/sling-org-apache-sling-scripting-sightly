@@ -55,7 +55,8 @@ public class SightlyCompiledScript extends CompiledScript {
         Object oldBindings = request.getAttribute(SlingBindings.class.getName());
         try {
             request.setAttribute(SlingBindings.class.getName(), slingBindings);
-            RenderContext renderContext = new RenderContextImpl(scriptEngine.getExtensionRegistryService(), context);
+            RenderContext renderContext = new RenderContextImpl(scriptEngine.getConfiguration(),
+                    scriptEngine.getExtensionRegistryService(), context);
             PrintWriter out = new PrintWriter(context.getWriter());
             renderUnit.render(out, renderContext, new SimpleBindings());
         } finally {

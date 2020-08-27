@@ -23,34 +23,34 @@ import java.util.Map;
 import javax.script.Bindings;
 import javax.script.ScriptContext;
 
-import org.apache.sling.api.scripting.SlingScriptConstants;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.impl.engine.ExtensionRegistryService;
+import org.apache.sling.scripting.sightly.impl.engine.SightlyEngineConfiguration;
 import org.apache.sling.scripting.sightly.render.AbstractRuntimeObjectModel;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.wiring.BundleWiring;
 
 /**
  * Rendering context for HTL rendering units.
  */
 public class RenderContextImpl implements RenderContext {
 
-    private static final AbstractRuntimeObjectModel OBJECT_MODEL = new SlingRuntimeObjectModel();
+    private final AbstractRuntimeObjectModel runtimeModel;
 
     private final Bindings bindings;
     private final ExtensionRegistryService extensionRegistryService;
 
-    public RenderContextImpl(ExtensionRegistryService extensionRegistryService, ScriptContext scriptContext) {
+    public RenderContextImpl(SightlyEngineConfiguration configuration, ExtensionRegistryService extensionRegistryService,
+                             ScriptContext scriptContext) {
         this.extensionRegistryService = extensionRegistryService;
-        bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
+        this.bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
+        runtimeModel = new SlingRuntimeObjectModel(configuration.legacyBooleanCasting());
     }
 
     @Override
     public RuntimeObjectModel getObjectModel() {
-        return OBJECT_MODEL;
+        return runtimeModel;
     }
 
     /**
