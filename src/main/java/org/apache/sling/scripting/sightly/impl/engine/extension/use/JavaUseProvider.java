@@ -152,29 +152,37 @@ public class JavaUseProvider implements UseProvider {
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
             InstantiationException {
             // OSGi service
-            Object result = serviceLoader.getService(cls);
-            if (result != null) {
-                return ProviderOutcome.success(result);
+            Object serviceResult = serviceLoader.getService(cls);
+            if (serviceResult != null) {
+                return ProviderOutcome.success(serviceResult);
             }
             // adaptable
             Object adaptableCandidate = arguments.get(ADAPTABLE);
+            Adaptable adaptable = null;
+
             if (adaptableCandidate instanceof Adaptable) {
-                Adaptable adaptable = (Adaptable) adaptableCandidate;
-                result = adaptable.adaptTo(cls);
-                if (result != null) {
-                    return ProviderOutcome.success(result);
-                }
+                adaptable = (Adaptable) adaptableCandidate;
+            } else {
+                LOG.debug("The provided adaptable argument value, was not of type Adaptable");
             }
+
             SlingHttpServletRequest request = BindingsUtils.getRequest(globalBindings);
             Resource resource = BindingsUtils.getResource(globalBindings);
             // Sling Model
             if (modelFactory != null && modelFactory.isModelClass(cls)) {
                 try {
-                    // try to instantiate class via Sling Models (first via request, then via resource)
+                    // Attempt to instantiate via sling models
+                    // first, try to use the provided adaptable
+                    if (adaptable != null && modelFactory.canCreateFromAdaptable(adaptable, cls)) {
+                        LOG.debug("Trying to instantiate class {} as Sling Model from provided adaptable.", cls);
+                        return ProviderOutcome.notNullOrFailure(modelFactory.createModel(request, cls));
+                    }
+                    // then, try to use the request
                     if (request != null && modelFactory.canCreateFromAdaptable(request, cls)) {
                         LOG.debug("Trying to instantiate class {} as Sling Model from request.", cls);
                         return ProviderOutcome.notNullOrFailure(modelFactory.createModel(request, cls));
                     }
+                    // finally, try to use the resource
                     if (resource != null && modelFactory.canCreateFromAdaptable(resource, cls)) {
                         LOG.debug("Trying to instantiate class {} as Sling Model from resource.", cls);
                         return ProviderOutcome.notNullOrFailure(modelFactory.createModel(resource, cls));
@@ -185,14 +193,23 @@ public class JavaUseProvider implements UseProvider {
                     return ProviderOutcome.failure(e);
                 }
             }
-            if (request != null) {
-                result = request.adaptTo(cls);
+
+            Object adaptableResult = null;
+            if (adaptable != null) {
+                LOG.debug("Trying to instantiate class {} as sling adapter via adaptable.adaptTo().", cls);
+                adaptableResult = adaptable.adaptTo(cls);
             }
-            if (result == null && resource != null) {
-                result = resource.adaptTo(cls);
+            if (adaptableResult == null && request != null) {
+                LOG.debug("Trying to instantiate class {} as sling adapter via request.adaptTo().", cls);
+                adaptableResult = request.adaptTo(cls);
             }
-            if (result != null) {
-                return ProviderOutcome.success(result);
+            if (adaptableResult == null && resource != null) {
+                LOG.debug("Trying to instantiate class {} as sling adapter via resource.adaptTo().", cls);
+                adaptableResult = resource.adaptTo(cls);
+            }
+
+            if (adaptableResult != null) {
+                return ProviderOutcome.success(adaptableResult);
             } else if (cls.isInterface() || Modifier.isAbstract(cls.getModifiers())) {
                 LOG.debug("Won't attempt to instantiate an interface or abstract class {}", cls.getName());
                 return ProviderOutcome.failure(new IllegalArgumentException(String.format(" %s represents an interface or an abstract " +
@@ -202,11 +219,11 @@ public class JavaUseProvider implements UseProvider {
                  * the object was cached by the class loader but it's not adaptable from {@link Resource} or {@link
                  * SlingHttpServletRequest}; attempt to load it like a regular POJO that optionally could implement {@link Use}
                  */
-                result = cls.getDeclaredConstructor().newInstance();
-                if (result instanceof Use) {
-                    ((Use) result).init(BindingsUtils.merge(globalBindings, arguments));
+                Object javaUseResult = cls.getDeclaredConstructor().newInstance();
+                if (javaUseResult instanceof Use) {
+                    ((Use) javaUseResult).init(BindingsUtils.merge(globalBindings, arguments));
                 }
-                return ProviderOutcome.notNullOrFailure(result);
+                return ProviderOutcome.notNullOrFailure(javaUseResult);
             }
     }
 
