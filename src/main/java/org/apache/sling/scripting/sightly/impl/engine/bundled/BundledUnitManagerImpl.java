@@ -115,11 +115,18 @@ public class BundledUnitManagerImpl implements BundledUnitManager {
     public RenderUnit getRenderUnit(@NotNull Bindings bindings, @NotNull String identifier) {
         BundledRenderUnit bundledRenderUnit = getBundledRenderUnit(bindings);
         Resource currentResource = BindingsUtils.getResource(bindings);
-        List<String> searchPathRelativeLocations = new ArrayList<>();
-        if (!identifier.startsWith("/")) {
-            ResourceResolver scriptingResourceResolver = scriptingResourceResolverProvider.getRequestScopedResourceResolver();
-            for (String searchPath : scriptingResourceResolver.getSearchPath()) {
-                searchPathRelativeLocations.add(ResourceUtil.normalize(searchPath + "/" + identifier));
+        Set<String> defaultLocations = new LinkedHashSet<>();
+        for (String searchPath : scriptingResourceResolverProvider.getRequestScopedResourceResolver().getSearchPath()) {
+            if (identifier.startsWith("/")) {
+                defaultLocations.add(identifier);
+                if (identifier.startsWith(searchPath)) {
+                    defaultLocations.add(identifier.substring(searchPath.length()));
+                }
+            } else {
+                String path = ResourceUtil.normalize(searchPath + "/" + identifier);
+                if (path != null) {
+                    defaultLocations.add(path);
+                }
             }
         }
         if (currentResource != null && bundledRenderUnit != null) {
@@ -129,10 +136,8 @@ public class BundledUnitManagerImpl implements BundledUnitManager {
                     for (ResourceType type : provider.getBundledRenderUnitCapability().getResourceTypes()) {
                         locations.add(getResourceTypeQualifiedPath(identifier, type));
                     }
-                    locations.addAll(searchPathRelativeLocations);
-                } else {
-                    locations.add(identifier);
                 }
+                locations.addAll(defaultLocations);
                 for (String renderUnitIdentifier : locations) {
                     String renderUnitBundledPath = renderUnitIdentifier;
                     if (renderUnitBundledPath.startsWith("/")) {
@@ -185,8 +190,7 @@ public class BundledUnitManagerImpl implements BundledUnitManager {
         if (currentResource != null && bundledRenderUnit != null) {
             for (TypeProvider provider : bundledRenderUnit.getTypeProviders()) {
                 for (ResourceType type : provider.getBundledRenderUnitCapability().getResourceTypes()) {
-                    String scriptResourcePath = getResourceTypeQualifiedPath(identifier, type);
-                    String scriptBundledPath = scriptResourcePath;
+                    String scriptBundledPath = getResourceTypeQualifiedPath(identifier, type);
                     if (scriptBundledPath.startsWith("/")) {
                         scriptBundledPath = scriptBundledPath.substring(1);
                     }

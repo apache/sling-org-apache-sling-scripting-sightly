@@ -117,7 +117,7 @@ public class RenderUnitProvider implements UseProvider {
             try {
                 if ("true".equalsIgnoreCase((String) renderUnitResource.getResourceMetadata().get("sling.servlet.resource"))) {
                     // bundled dependency
-                    RenderUnit renderUnit = bundledUnitManager.getRenderUnit(globalBindings, identifier);
+                    RenderUnit renderUnit = bundledUnitManager.getRenderUnit(globalBindings, renderUnitResource.getPath());
                     if (renderUnit != null) {
                         return ProviderOutcome.success(renderUnit);
                     }
