@@ -37,7 +37,7 @@
         The versioning scheme defined here corresponds to SLING-7406 (<module_version>-<htl_specification_version>). Take care when
         releasing to only increase the first part, unless the module provides support for a newer version of the HTL specification.
     -->
-    <version>1.4.3-1.4.0-SNAPSHOT</version>
+    <version>1.4.4-1.4.0</version>
     <name>Apache Sling Scripting HTL Engine</name>
 
     <description>
@@ -49,7 +49,7 @@
         <connection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-scripting-sightly.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-scripting-sightly.git</developerConnection>
         <url>https://gitbox.apache.org/repos/asf?p=sling-org-apache-sling-scripting-sightly.git</url>
-      <tag>HEAD</tag>
+      <tag>org.apache.sling.scripting.sightly-1.4.4-1.4.0</tag>
   </scm>
 
     <properties>
@@ -101,7 +101,7 @@
         <dependency>
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.scripting.sightly.runtime</artifactId>
-            <version>1.2.3-1.4.0-SNAPSHOT</version>
+            <version>1.2.4-1.4.0</version>
             <scope>provided</scope>
         </dependency>
 
