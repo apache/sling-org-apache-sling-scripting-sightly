@@ -19,11 +19,15 @@ package org.apache.sling.scripting.sightly.impl.utils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.resource.ResourceUtil;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.scripting.sightly.engine.ResourceResolution;
 import org.apache.sling.scripting.sightly.render.RenderContext;
+import org.jetbrains.annotations.NotNull;
 
 public class ScriptUtils {
+
+    private ScriptUtils() {}
 
     public static Resource resolveScript(ResourceResolver resolver, RenderContext renderContext, String scriptIdentifier) {
         SlingHttpServletRequest request = BindingsUtils.getRequest(renderContext.getBindings());
@@ -31,9 +35,33 @@ public class ScriptUtils {
         Resource result = ResourceResolution.getResourceFromSearchPath(caller, scriptIdentifier);
         if (result == null) {
             SlingScriptHelper sling = BindingsUtils.getHelper(renderContext.getBindings());
-            caller = sling.getScript().getScriptResource();
-            result = ResourceResolution.getResourceFromSearchPath(caller, scriptIdentifier);
+            if (sling != null) {
+                caller = getResource(resolver, sling.getScript().getScriptResource());
+                result = ResourceResolution.getResourceFromSearchPath(caller, scriptIdentifier);
+            }
         }
         return result;
+    }
+
+    private static Resource getResource(@NotNull ResourceResolver resolver, @NotNull Resource resource) {
+        String path = resource.getPath();
+        if (path.startsWith("/")) {
+            Resource resolved = resolver.resolve(path);
+            if (ResourceUtil.isNonExistingResource(resolved)) {
+                return null;
+            }
+            return resolved;
+        } else {
+            for (String sp : resolver.getSearchPath()) {
+                String absolutePath = ResourceUtil.normalize(sp + path);
+                if (absolutePath != null) {
+                    Resource resolved = resolver.resolve(absolutePath);
+                    if (!ResourceUtil.isNonExistingResource(resolved)) {
+                        return resolved;
+                    }
+                }
+            }
+        }
+        return null;
     }
 }
