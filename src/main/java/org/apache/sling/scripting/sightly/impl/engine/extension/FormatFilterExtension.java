@@ -67,21 +67,48 @@ public class FormatFilterExtension implements RuntimeExtension {
         Object formatObject = options.get(FORMAT_OPTION);
         boolean hasPlaceHolders = PLACEHOLDER_REGEX.matcher(source).find();
         if (STRING_FORMAT_TYPE.equals(formattingType)) {
-            Object[] params = decodeParams(runtimeObjectModel, formatObject);
-            return formatString(runtimeObjectModel, source, params);
+            return getFormattedString(runtimeObjectModel, source, formatObject);
         } else if (DATE_FORMAT_TYPE.equals(formattingType) || (!hasPlaceHolders && runtimeObjectModel.isDate(formatObject))) {
-            Locale locale = getLocale(runtimeObjectModel, options);
-            TimeZone timezone = getTimezone(runtimeObjectModel, options);
-            return formatDate(source, runtimeObjectModel.toDate(formatObject), locale, timezone);
+            return getDateFormattedString(runtimeObjectModel, source, options, formatObject);
         } else if (NUMBER_FORMAT_TYPE.equals(formattingType) || (!hasPlaceHolders && runtimeObjectModel.isNumber(formatObject))) {
-            Locale locale = getLocale(runtimeObjectModel, options);
-            return formatNumber(source, runtimeObjectModel.toNumber(formatObject), locale);
+            return getNumberFormattedString(runtimeObjectModel, source, options, formatObject);
         }
         if (hasPlaceHolders) {
-            Object[] params = decodeParams(runtimeObjectModel, formatObject);
-            return formatString(runtimeObjectModel, source, params);
+            return getFormattedString(runtimeObjectModel, source, formatObject);
         }
-        return null;
+        try {
+            // somebody will hate me for this
+            new SimpleDateFormat(source);
+            return getDateFormattedString(runtimeObjectModel, source, options, formatObject);
+        } catch (IllegalArgumentException e) {
+            // ignore
+        }
+        try {
+            // for this too, but such is life
+            new DecimalFormat(source);
+            return getNumberFormattedString(runtimeObjectModel, source, options, formatObject);
+        } catch (IllegalArgumentException e) {
+            // ignore
+        }
+        return getFormattedString(runtimeObjectModel, source, formatObject);
+    }
+
+    private Object getFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Object formatObject) {
+        Object[] params = decodeParams(runtimeObjectModel, formatObject);
+        return formatString(runtimeObjectModel, source, params);
+    }
+
+    private String getNumberFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options,
+                                            Object formatObject) {
+        Locale locale = getLocale(runtimeObjectModel, options);
+        return formatNumber(source, runtimeObjectModel.toNumber(formatObject), locale);
+    }
+
+    private String getDateFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options,
+                                          Object formatObject) {
+        Locale locale = getLocale(runtimeObjectModel, options);
+        TimeZone timezone = getTimezone(runtimeObjectModel, options);
+        return formatDate(source, runtimeObjectModel.toDate(formatObject), locale, timezone);
     }
 
     private Locale getLocale(RuntimeObjectModel runtimeObjectModel, Map<String, Object> options) {
