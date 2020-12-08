@@ -18,6 +18,7 @@
  ******************************************************************************/
 package org.apache.sling.scripting.sightly.impl.engine.extension;
 
+import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
@@ -175,16 +176,42 @@ public class FormatFilterExtension implements RuntimeExtension {
         return "";
     }
 
+    private int getPredefinedFormattingStyleFromValue(String value) {
+        switch (value.toLowerCase(Locale.ROOT)) {
+            case "default":
+                return DateFormat.DEFAULT;
+            case "short":
+                return DateFormat.SHORT;
+            case "medium":
+                return DateFormat.MEDIUM;
+            case "long":
+                return DateFormat.LONG;
+            case "full":
+                return DateFormat.FULL;
+            default:
+                return -1;
+        }
+    }
+
     private String formatDate(String format, Date date, Locale locale, TimeZone timezone) {
         if (date == null) {
             return null;
         }
         try {
-            SimpleDateFormat formatter;
-            if (locale != null) {
-                formatter = new SimpleDateFormat(format, locale);
+            final DateFormat formatter;
+            int formattingStyle = getPredefinedFormattingStyleFromValue(format);
+            if (formattingStyle != -1) {
+                if (locale != null) {
+                    formatter = DateFormat.getDateInstance(formattingStyle, locale);
+                } else {
+                    formatter = DateFormat.getDateInstance(formattingStyle);
+                }
             } else {
-                formatter = new SimpleDateFormat(format);
+                if (locale != null) {
+                    formatter = new SimpleDateFormat(format, locale);
+                } else {
+                    formatter = new SimpleDateFormat(format);
+                }
             }
             if (timezone != null) {
                 formatter.setTimeZone(timezone);
