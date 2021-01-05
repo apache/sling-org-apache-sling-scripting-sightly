@@ -22,7 +22,7 @@ package org.apache.sling.scripting.sightly.impl.engine;
 import javax.script.ScriptEngineFactory;
 import javax.script.SimpleScriptContext;
 
-import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
+import org.apache.sling.scripting.sightly.impl.engine.bundle.BundledUnitManagerImpl;
 import org.apache.sling.scripting.sightly.impl.engine.runtime.RenderContextImpl;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.testing.mock.osgi.junit.OsgiContext;

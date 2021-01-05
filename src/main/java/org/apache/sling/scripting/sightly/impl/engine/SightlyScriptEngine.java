@@ -28,7 +28,7 @@ import javax.script.ScriptContext;
 import javax.script.ScriptException;
 
 import org.apache.sling.scripting.api.AbstractSlingScriptEngine;
-import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
+import org.apache.sling.scripting.sightly.impl.engine.bundle.BundledUnitManagerImpl;
 import org.apache.sling.scripting.sightly.impl.engine.compiled.SlingHTLMasterCompiler;
 import org.apache.sling.scripting.sightly.render.RenderUnit;
 import org.slf4j.Logger;

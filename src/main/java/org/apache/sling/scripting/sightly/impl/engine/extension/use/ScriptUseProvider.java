@@ -40,7 +40,7 @@ import org.apache.sling.scripting.api.bundle.BundledRenderUnit;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngineFactory;
-import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
+import org.apache.sling.scripting.sightly.impl.engine.bundle.BundledUnitManagerImpl;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.impl.utils.ScriptUtils;
 import org.apache.sling.scripting.sightly.render.RenderContext;

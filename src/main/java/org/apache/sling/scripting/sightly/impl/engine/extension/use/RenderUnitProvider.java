@@ -39,7 +39,7 @@ import org.apache.sling.scripting.sightly.engine.ResourceResolution;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyCompiledScript;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngine;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngineFactory;
-import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
+import org.apache.sling.scripting.sightly.impl.engine.bundle.BundledUnitManagerImpl;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.impl.utils.ScriptUtils;
 import org.apache.sling.scripting.sightly.render.RenderContext;
