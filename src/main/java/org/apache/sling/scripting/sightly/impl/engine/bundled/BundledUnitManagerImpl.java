@@ -33,14 +33,15 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceUtil;
-import org.apache.sling.api.resource.type.ResourceType;
 import org.apache.sling.commons.compiler.source.JavaEscapeHelper;
 import org.apache.sling.scripting.api.CachedScript;
 import org.apache.sling.scripting.api.ScriptCache;
-import org.apache.sling.scripting.api.bundle.BundledRenderUnit;
-import org.apache.sling.scripting.api.bundle.TypeProvider;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
+import org.apache.sling.servlets.resolver.bundle.tracker.BundledRenderUnit;
+import org.apache.sling.servlets.resolver.bundle.tracker.ResourceType;
+import org.apache.sling.servlets.resolver.bundle.tracker.TypeProvider;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.engine.BundledUnitManager;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyCompiledScript;
