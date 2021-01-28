@@ -22,13 +22,17 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
 
 import org.apache.sling.scripting.api.AbstractScriptEngineFactory;
-import org.apache.sling.scripting.sightly.impl.engine.bundle.BundledUnitManagerImpl;
+import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
 import org.apache.sling.scripting.sightly.impl.engine.compiled.SlingHTLMasterCompiler;
 import org.osgi.framework.Constants;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 /**
  * HTL template engine factory

@@ -31,7 +31,7 @@ import org.apache.sling.api.adapter.Adaptable;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.models.factory.ModelFactory;
-import org.apache.sling.scripting.sightly.impl.engine.bundle.BundledUnitManagerImpl;
+import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
 import org.apache.sling.scripting.sightly.impl.engine.compiled.SlingHTLMasterCompiler;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.impl.utils.Patterns;
