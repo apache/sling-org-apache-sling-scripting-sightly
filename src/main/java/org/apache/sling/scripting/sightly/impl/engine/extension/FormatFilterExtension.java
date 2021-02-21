@@ -140,7 +140,7 @@ public class FormatFilterExtension implements RuntimeExtension {
 
     private Object[] decodeParams(RuntimeObjectModel runtimeObjectModel, Object paramObj) {
         if (paramObj == null) {
-            return null;
+            return new Object[] { };
         }
         if (runtimeObjectModel.isCollection(paramObj)) {
             return runtimeObjectModel.toCollection(paramObj).toArray();
