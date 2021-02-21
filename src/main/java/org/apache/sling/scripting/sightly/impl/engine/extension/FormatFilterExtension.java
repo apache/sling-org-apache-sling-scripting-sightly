@@ -56,6 +56,7 @@ public class FormatFilterExtension implements RuntimeExtension {
     private static final String DATE_FORMAT_TYPE = "date";
     private static final String NUMBER_FORMAT_TYPE = "number";
     private static final String STRING_FORMAT_TYPE = "string";
+    private static final String WHITESPACE_FORMAT_TYPE = "whitespace";
 
     @Override
     public Object call(final RenderContext renderContext, Object... arguments) {
@@ -73,6 +74,8 @@ public class FormatFilterExtension implements RuntimeExtension {
             return getDateFormattedString(runtimeObjectModel, source, options, formatObject);
         } else if (NUMBER_FORMAT_TYPE.equals(formattingType) || (!hasPlaceHolders && runtimeObjectModel.isNumber(formatObject))) {
             return getNumberFormattedString(runtimeObjectModel, source, options, formatObject);
+        } else if (WHITESPACE_FORMAT_TYPE.equals(formattingType)) {
+            return filterWhiteSpace(source);
         }
         if (hasPlaceHolders) {
             return getFormattedString(runtimeObjectModel, source, formatObject);
@@ -167,6 +170,12 @@ public class FormatFilterExtension implements RuntimeExtension {
         }
         builder.append(source, lastPos, source.length());
         return builder.toString();
+    }
+
+    private String filterWhiteSpace(String source){
+        String ret = source.replaceAll("^\\s+", "");
+        ret = ret.replaceAll("\\s+$", "");
+        return ret;
     }
 
     private String toString(RuntimeObjectModel runtimeObjectModel, Object[] params, int index) {
