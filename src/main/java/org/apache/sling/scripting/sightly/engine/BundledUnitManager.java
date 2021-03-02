@@ -22,8 +22,8 @@ import java.net.URL;
 
 import javax.script.Bindings;
 
-import org.apache.sling.servlets.resolver.bundle.tracker.BundledRenderUnit;
 import org.apache.sling.scripting.sightly.render.RenderUnit;
+import org.apache.sling.scripting.spi.bundle.BundledRenderUnit;
 import org.jetbrains.annotations.Nullable;
 import org.osgi.annotation.versioning.ProviderType;
 
