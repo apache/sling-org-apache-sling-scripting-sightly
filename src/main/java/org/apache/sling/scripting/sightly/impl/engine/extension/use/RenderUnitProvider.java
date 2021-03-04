@@ -46,6 +46,7 @@ import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RenderUnit;
 import org.apache.sling.scripting.sightly.use.ProviderOutcome;
 import org.apache.sling.scripting.sightly.use.UseProvider;
+import org.apache.sling.scripting.spi.bundle.BundledRenderUnit;
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -116,10 +117,9 @@ public class RenderUnitProvider implements UseProvider {
             }
             try {
                 if ("true".equalsIgnoreCase((String) renderUnitResource.getResourceMetadata().get("sling.servlet.resource"))) {
-                    // bundled dependency
-                    RenderUnit renderUnit = bundledUnitManager.getRenderUnit(globalBindings, renderUnitResource.getPath());
-                    if (renderUnit != null) {
-                        return ProviderOutcome.success(renderUnit);
+                    BundledRenderUnit bundledRenderUnit = renderUnitResource.adaptTo(BundledRenderUnit.class);
+                    if (bundledRenderUnit != null && bundledRenderUnit.getUnit() instanceof RenderUnit) {
+                        return ProviderOutcome.success(bundledRenderUnit.getUnit());
                     }
                 }
                 CachedScript cachedScript = scriptCache.getScript(renderUnitResource.getPath());
