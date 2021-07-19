@@ -38,6 +38,10 @@ import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
 import org.osgi.service.component.annotations.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.ibm.icu.text.MessageFormat;
 
 @Component(
         service = RuntimeExtension.class,
@@ -47,7 +51,11 @@ import org.osgi.service.component.annotations.Component;
 )
 public class FormatFilterExtension implements RuntimeExtension {
 
+    static boolean hasIcuSupport;
+
+    private static final Logger LOG = LoggerFactory.getLogger(FormatFilterExtension.class);
     private static final Pattern PLACEHOLDER_REGEX = Pattern.compile("\\{\\d+}");
+    private static final Pattern COMPLEX_PLACEHOLDER_REGEX = Pattern.compile("\\{\\d+,[^}]+}");
     private static final String FORMAT_OPTION = "format";
     private static final String TYPE_OPTION = "type";
     private static final String LOCALE_OPTION = "locale";
@@ -56,6 +64,16 @@ public class FormatFilterExtension implements RuntimeExtension {
     private static final String DATE_FORMAT_TYPE = "date";
     private static final String NUMBER_FORMAT_TYPE = "number";
     private static final String STRING_FORMAT_TYPE = "string";
+
+    static {
+        try {
+            FormatFilterExtension.class.getClassLoader().loadClass("com.ibm.icu.text.MessageFormat");
+            hasIcuSupport = true;
+        } catch (ClassNotFoundException ex) {
+            LOG.trace("Initialize without ICU support: {}", ex.getMessage(), ex);
+            hasIcuSupport = false;
+        }
+    }
 
     @Override
     public Object call(final RenderContext renderContext, Object... arguments) {
@@ -67,15 +85,22 @@ public class FormatFilterExtension implements RuntimeExtension {
         String formattingType = runtimeObjectModel.toString(options.get(TYPE_OPTION));
         Object formatObject = options.get(FORMAT_OPTION);
         boolean hasPlaceHolders = PLACEHOLDER_REGEX.matcher(source).find();
+        // Check for complex placeholders only if no simple placeholders were found. If simple placeholders were found getFormattedString()
+        // is called anyways and the source can be matched complex placeholders later.
+        Boolean hasComplexPlaceholders = null;
+        if (!hasPlaceHolders && hasIcuSupport) {
+            hasComplexPlaceholders = COMPLEX_PLACEHOLDER_REGEX.matcher(source).find();
+            hasPlaceHolders = hasComplexPlaceholders;
+        }
         if (STRING_FORMAT_TYPE.equals(formattingType)) {
-            return getFormattedString(runtimeObjectModel, source, formatObject);
+            return getFormattedString(runtimeObjectModel, source, options, formatObject, hasComplexPlaceholders);
         } else if (DATE_FORMAT_TYPE.equals(formattingType) || (!hasPlaceHolders && runtimeObjectModel.isDate(formatObject))) {
             return getDateFormattedString(runtimeObjectModel, source, options, formatObject);
         } else if (NUMBER_FORMAT_TYPE.equals(formattingType) || (!hasPlaceHolders && runtimeObjectModel.isNumber(formatObject))) {
             return getNumberFormattedString(runtimeObjectModel, source, options, formatObject);
         }
         if (hasPlaceHolders) {
-            return getFormattedString(runtimeObjectModel, source, formatObject);
+            return getFormattedString(runtimeObjectModel, source, options, formatObject, hasComplexPlaceholders);
         }
         try {
             // somebody will hate me for this
@@ -91,11 +116,22 @@ public class FormatFilterExtension implements RuntimeExtension {
         } catch (IllegalArgumentException e) {
             // ignore
         }
-        return getFormattedString(runtimeObjectModel, source, formatObject);
+        return getFormattedString(runtimeObjectModel, source, options, formatObject, hasComplexPlaceholders);
     }
 
-    private Object getFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Object formatObject) {
+    private Object getFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options,
+                                      Object formatObject, Boolean hasComplexPlaceholders) {
         Object[] params = decodeParams(runtimeObjectModel, formatObject);
+        if (hasIcuSupport) {
+            if (hasComplexPlaceholders == null) {
+                hasComplexPlaceholders = COMPLEX_PLACEHOLDER_REGEX.matcher(source).find();
+            }
+            if (hasComplexPlaceholders) {
+                Locale locale = getLocale(runtimeObjectModel, options);
+                return formatStringIcu(source, locale, params);
+            }
+        }
+
         return formatString(runtimeObjectModel, source, params);
     }
 
@@ -167,6 +203,14 @@ public class FormatFilterExtension implements RuntimeExtension {
         }
         builder.append(source, lastPos, source.length());
         return builder.toString();
+    }
+
+    private String formatStringIcu(String source, Locale locale, Object[] params) {
+        MessageFormat messageFormat = new MessageFormat(source);
+        if (locale != null) {
+            messageFormat.setLocale(locale);
+        }
+        return messageFormat.format(params);
     }
 
     private String toString(RuntimeObjectModel runtimeObjectModel, Object[] params, int index) {
