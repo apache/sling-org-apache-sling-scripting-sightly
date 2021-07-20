@@ -31,10 +31,15 @@ import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.render.AbstractRuntimeObjectModel;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
+import org.hamcrest.CoreMatchers;
+import org.junit.Assume;
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assume.assumeThat;
+import static org.junit.Assume.assumeTrue;
 
 public class FormatFilterExtensionTest {
 
@@ -91,7 +96,17 @@ public class FormatFilterExtensionTest {
     }
 
     @Test
-    public void testDateFormatWithEscapedCharacters() {
+    public void testDateFormatWithEscapedCharactersJdk8() {
+        assumeJdk8();
+        assertDate("01 December '18 12:00 AM; day in year: 335; week in year: 49",
+            "dd MMMM ''yy hh:mm a; 'day in year': D; 'week in year': w",
+            "UTC",
+            null);
+    }
+
+    @Test
+    public void testDateFormatWithEscapedCharactersJdk11OrNewer() {
+        assumeJdk11OrNewer();
         assertDate("01 December '18 12:00 AM; day in year: 335; week in year: 48",
             "dd MMMM ''yy hh:mm a; 'day in year': D; 'week in year': w",
             "UTC",
@@ -99,12 +114,26 @@ public class FormatFilterExtensionTest {
     }
 
     @Test
-    public void testDateFormatWithLocale() {
+    public void testDateFormatWithLocaleJdk8() {
+        assumeJdk8();
+        assertDate("Sonntag, 1 Dez 1918", "EEEE, d MMM y", "UTC", "de");
+    }
+
+    @Test
+    public void testDateFormatWithLocaleJdk11OrNewer() {
+        assumeJdk11OrNewer();
         assertDate("Sonntag, 1 Dez. 1918", "EEEE, d MMM y", "UTC", "de");
     }
 
     @Test
-    public void testDateFormatWithFormatStyleShort() {
+    public void testDateFormatWithFormatStyleShortJdk8() {
+        assumeJdk8();
+        assertDate("01/12/18", "short", "GMT+02:00", "fr");
+    }
+
+    @Test
+    public void testDateFormatWithFormatStyleShortJdk11OrNewer() {
+        assumeJdk11OrNewer();
         assertDate("01/12/1918", "short", "GMT+02:00", "fr");
     }
 
@@ -138,5 +167,26 @@ public class FormatFilterExtensionTest {
             options.put(FormatFilterExtension.LOCALE_OPTION, locale);
         }
         assertEquals(expected, subject.call(renderContext, format, options));
+    }
+
+    private static void assumeJdk8() {
+        assumeTrue("assuming jdk8", getJavaMajorVersion() == 8);
+    }
+
+    private static void assumeJdk11OrNewer() {
+        assumeTrue("assuming jdk11 or newer", getJavaMajorVersion() >= 11);
+    }
+
+    private static int getJavaMajorVersion() {
+        String version = System.getProperty("java.version");
+        if (version.startsWith("1.")) {
+            return Integer.parseInt(version.substring(2, 3));
+        } else {
+            int dot = version.indexOf(".");
+            if (dot != -1) {
+                return Integer.parseInt(version.substring(0, dot));
+            }
+        }
+        return Integer.parseInt(version);
     }
 }
