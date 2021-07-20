@@ -113,14 +113,9 @@ public class FormatFilterExtension implements RuntimeExtension {
 
     private String getDateFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options,
                                           Object formatObject) {
-        return getDateFormattedString(runtimeObjectModel, source, options, formatObject, null);
-    }
-
-    private String getDateFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options,
-                                          Object formatObject, DateTimeFormatter formatter) {
         Locale locale = getLocale(runtimeObjectModel, options);
         TimeZone timezone = getTimezone(runtimeObjectModel, options);
-        return formatDate(source, runtimeObjectModel.toDate(formatObject), locale, timezone, formatter);
+        return formatDate(source, runtimeObjectModel.toDate(formatObject), locale, timezone);
     }
 
     private Locale getLocale(RuntimeObjectModel runtimeObjectModel, Map<String, Object> options) {
@@ -203,18 +198,17 @@ public class FormatFilterExtension implements RuntimeExtension {
         }
     }
 
-    private String formatDate(String format, Date date, Locale locale, TimeZone timezone, DateTimeFormatter formatter) {
+    private String formatDate(String format, Date date, Locale locale, TimeZone timezone) {
         if (date == null) {
             return null;
         }
         try {
-            if (formatter == null) {
-                FormatStyle formattingStyle = getPredefinedFormattingStyleFromValue(format);
-                if (formattingStyle != null) {
-                    formatter = DateTimeFormatter.ofLocalizedDate(formattingStyle);
-                } else {
-                    formatter = DateTimeFormatter.ofPattern(format);
-                }
+            DateTimeFormatter formatter;
+            FormatStyle formattingStyle = getPredefinedFormattingStyleFromValue(format);
+            if (formattingStyle != null) {
+                formatter = DateTimeFormatter.ofLocalizedDate(formattingStyle);
+            } else {
+                formatter = DateTimeFormatter.ofPattern(format);
             }
             if (locale != null) {
                 formatter = formatter.withLocale(locale);
