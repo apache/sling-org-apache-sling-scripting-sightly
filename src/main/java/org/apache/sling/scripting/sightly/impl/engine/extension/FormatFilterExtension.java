@@ -18,11 +18,11 @@
  ******************************************************************************/
 package org.apache.sling.scripting.sightly.impl.engine.extension;
 
-import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
@@ -38,6 +38,8 @@ import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
 import org.osgi.service.component.annotations.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component(
         service = RuntimeExtension.class,
@@ -47,15 +49,17 @@ import org.osgi.service.component.annotations.Component;
 )
 public class FormatFilterExtension implements RuntimeExtension {
 
-    private static final Pattern PLACEHOLDER_REGEX = Pattern.compile("\\{\\d+}");
-    private static final String FORMAT_OPTION = "format";
-    private static final String TYPE_OPTION = "type";
-    private static final String LOCALE_OPTION = "locale";
-    private static final String TIMEZONE_OPTION = "timezone";
+    protected static final String FORMAT_OPTION = "format";
+    protected static final String TYPE_OPTION = "type";
+    protected static final String LOCALE_OPTION = "locale";
+    protected static final String TIMEZONE_OPTION = "timezone";
 
-    private static final String DATE_FORMAT_TYPE = "date";
-    private static final String NUMBER_FORMAT_TYPE = "number";
-    private static final String STRING_FORMAT_TYPE = "string";
+    protected static final String DATE_FORMAT_TYPE = "date";
+    protected static final String NUMBER_FORMAT_TYPE = "number";
+    protected static final String STRING_FORMAT_TYPE = "string";
+
+    private static final Logger LOG = LoggerFactory.getLogger(FormatFilterExtension.class);
+    private static final Pattern PLACEHOLDER_REGEX = Pattern.compile("\\{\\d+}");
 
     @Override
     public Object call(final RenderContext renderContext, Object... arguments) {
@@ -77,12 +81,14 @@ public class FormatFilterExtension implements RuntimeExtension {
         if (hasPlaceHolders) {
             return getFormattedString(runtimeObjectModel, source, formatObject);
         }
+
         try {
-            // somebody will hate me for this
-            new SimpleDateFormat(source);
+            // try to parse as DateTimeFormatter
+            // TODO: check if this is dead code
+            DateTimeFormatter.ofPattern(source);
             return getDateFormattedString(runtimeObjectModel, source, options, formatObject);
-        } catch (IllegalArgumentException e) {
-            // ignore
+        } catch (IllegalArgumentException ex) {
+            LOG.trace("Not a datetime format: {}", source, ex);
         }
         try {
             // for this too, but such is life
@@ -107,9 +113,14 @@ public class FormatFilterExtension implements RuntimeExtension {
 
     private String getDateFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options,
                                           Object formatObject) {
+        return getDateFormattedString(runtimeObjectModel, source, options, formatObject, null);
+    }
+
+    private String getDateFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options,
+                                          Object formatObject, DateTimeFormatter formatter) {
         Locale locale = getLocale(runtimeObjectModel, options);
         TimeZone timezone = getTimezone(runtimeObjectModel, options);
-        return formatDate(source, runtimeObjectModel.toDate(formatObject), locale, timezone);
+        return formatDate(source, runtimeObjectModel.toDate(formatObject), locale, timezone, formatter);
     }
 
     private Locale getLocale(RuntimeObjectModel runtimeObjectModel, Map<String, Object> options) {
@@ -176,47 +187,39 @@ public class FormatFilterExtension implements RuntimeExtension {
         return "";
     }
 
-    private int getPredefinedFormattingStyleFromValue(String value) {
+    private FormatStyle getPredefinedFormattingStyleFromValue(String value) {
         switch (value.toLowerCase(Locale.ROOT)) {
             case "default":
-                return DateFormat.DEFAULT;
-            case "short":
-                return DateFormat.SHORT;
             case "medium":
-                return DateFormat.MEDIUM;
+                return FormatStyle.MEDIUM;
+            case "short":
+                return FormatStyle.SHORT;
             case "long":
-                return DateFormat.LONG;
+                return FormatStyle.LONG;
             case "full":
-                return DateFormat.FULL;
+                return FormatStyle.FULL;
             default:
-                return -1;
+                return null;
         }
     }
 
-    private String formatDate(String format, Date date, Locale locale, TimeZone timezone) {
+    private String formatDate(String format, Date date, Locale locale, TimeZone timezone, DateTimeFormatter formatter) {
         if (date == null) {
             return null;
         }
         try {
-            final DateFormat formatter;
-            int formattingStyle = getPredefinedFormattingStyleFromValue(format);
-            if (formattingStyle != -1) {
-                if (locale != null) {
-                    formatter = DateFormat.getDateInstance(formattingStyle, locale);
+            if (formatter == null) {
+                FormatStyle formattingStyle = getPredefinedFormattingStyleFromValue(format);
+                if (formattingStyle != null) {
+                    formatter = DateTimeFormatter.ofLocalizedDate(formattingStyle);
                 } else {
-                    formatter = DateFormat.getDateInstance(formattingStyle);
-                }
-            } else {
-                if (locale != null) {
-                    formatter = new SimpleDateFormat(format, locale);
-                } else {
-                    formatter = new SimpleDateFormat(format);
+                    formatter = DateTimeFormatter.ofPattern(format);
                 }
             }
-            if (timezone != null) {
-                formatter.setTimeZone(timezone);
+            if (locale != null) {
+                formatter = formatter.withLocale(locale);
             }
-            return formatter.format(date);
+            return formatter.format(timezone != null ? date.toInstant().atZone(timezone.toZoneId()) : date.toInstant());
         } catch (Exception e) {
             String error = String.format("Error during formatting of date %s with format %s, locale %s and timezone %s", date, format, locale, timezone);
             throw new SightlyException( error, e);
