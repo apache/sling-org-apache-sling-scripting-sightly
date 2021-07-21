@@ -76,7 +76,6 @@ public class FormatFilterExtensionTest {
         assertDate(null, "yT", null, null);
     }
 
-
     @Test
     public void testDateFormatWithUTC() {
         assertDate("1918-12-01 00:00:00.000Z", "yyyy-MM-dd HH:mm:ss.SSSXXX", "UTC", null);
@@ -99,6 +98,7 @@ public class FormatFilterExtensionTest {
 
     /**
      * When using jdk9 or newer, make sure to set the {@code java.locale.providers = COMPAT,SPI}
+     *
      * @see <a href="https://docs.oracle.com/javase/9/docs/api/java/util/spi/LocaleServiceProvider.html">LocaleServiceProvider</a>
      */
     @Test
@@ -111,6 +111,7 @@ public class FormatFilterExtensionTest {
 
     /**
      * When using jdk9 or newer, make sure to set the {@code java.locale.providers = COMPAT,SPI}
+     *
      * @see <a href="https://docs.oracle.com/javase/9/docs/api/java/util/spi/LocaleServiceProvider.html">LocaleServiceProvider</a>
      */
     @Test
@@ -120,6 +121,7 @@ public class FormatFilterExtensionTest {
 
     /**
      * When using jdk9 or newer, make sure to set the {@code java.locale.providers = COMPAT,SPI}
+     *
      * @see <a href="https://docs.oracle.com/javase/9/docs/api/java/util/spi/LocaleServiceProvider.html">LocaleServiceProvider</a>
      */
     @Test
@@ -145,6 +147,21 @@ public class FormatFilterExtensionTest {
     @Test
     public void testDateFormatWithFormatStyleFull() {
         assertDate("dimanche 1 décembre 1918", "full", "GMT+02:00", "fr");
+    }
+
+    @Test
+    public void testDateFormatMixedWithReservedCharacters() {
+        assertEquals("#1: 1918 {0}", subject.call(renderContext, "#1: yyyy {0}", new HashMap<String, Object>() {{
+            put(FormatFilterExtension.TYPE_OPTION, FormatFilterExtension.DATE_FORMAT_TYPE);
+            put(FormatFilterExtension.FORMAT_OPTION, testDate);
+        }}));
+    }
+
+    @Test
+    public void testDateFormatNoNarrowForm() {
+        assertDate("December", "MMMMM", "UTC", "en");
+        assertDate("Sunday", "EEEEE", "UTC", "en");
+        assertDate("Sonntag", "eeeee", "UTC", "de");
     }
 
     private void assertDate(String expected, String format, String timezone, String locale) {

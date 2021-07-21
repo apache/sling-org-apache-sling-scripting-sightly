@@ -206,11 +206,20 @@ public class FormatFilterExtension implements RuntimeExtension {
             FormatStyle formattingStyle = getPredefinedFormattingStyleFromValue(format);
             if (formattingStyle != null) {
                 formatter = DateTimeFormatter.ofLocalizedDate(formattingStyle);
+                if (locale != null) {
+                    formatter = formatter.withLocale(locale);
+                }
             } else {
-                formatter = DateTimeFormatter.ofPattern(format);
-            }
-            if (locale != null) {
-                formatter = formatter.withLocale(locale);
+                // escape reserved characters, that are allowed according to the htl-tck
+                format =  format.replaceAll("([{}#])", "'$1'");
+                // normalized text narrow form to full form to be compatible with java.text.SimpleDateFormat
+                // for example EEEEE becomes EEEE
+                format = format.replaceAll("([GMLQqEec])\\1{4}", "$1$1$1$1");
+                if (locale != null) {
+                    formatter = DateTimeFormatter.ofPattern(format, locale);
+                } else {
+                    formatter = DateTimeFormatter.ofPattern(format);
+                }
             }
             return formatter.format(timezone != null ? date.toInstant().atZone(timezone.toZoneId()) : date.toInstant());
         } catch (Exception e) {
