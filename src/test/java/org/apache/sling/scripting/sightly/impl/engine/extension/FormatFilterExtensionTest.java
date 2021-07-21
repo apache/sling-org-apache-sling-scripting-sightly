@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.spi.LocaleServiceProvider;
 
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
@@ -33,7 +32,6 @@ import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.render.AbstractRuntimeObjectModel;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -99,23 +97,32 @@ public class FormatFilterExtensionTest {
         assertDate("1918-12-01 02:00:00.000(GMT+02:00)", "yyyy-MM-dd HH:mm:ss.SSS(z)", "GMT+02:00", null);
     }
 
+    /**
+     * When using jdk9 or newer, make sure to set the {@code java.locale.providers = COMPAT,SPI}
+     * @see <a href="https://docs.oracle.com/javase/9/docs/api/java/util/spi/LocaleServiceProvider.html">LocaleServiceProvider</a>
+     */
     @Test
-    @Ignore("ambiguous results depending on the jdk version and implementation used")
     public void testDateFormatWithEscapedCharacters() {
-        assertDate("01 December '18 12:00 AM; day in year: 335; week in year: 48",
+        assertDate("01 December '18 12:00 AM; day in year: 335; week in year: 49",
             "dd MMMM ''yy hh:mm a; 'day in year': D; 'week in year': w",
             "UTC",
             null);
     }
 
+    /**
+     * When using jdk9 or newer, make sure to set the {@code java.locale.providers = COMPAT,SPI}
+     * @see <a href="https://docs.oracle.com/javase/9/docs/api/java/util/spi/LocaleServiceProvider.html">LocaleServiceProvider</a>
+     */
     @Test
-    @Ignore("ambiguous results depending on the jdk version and implementation used")
     public void testDateFormatWithLocale() {
         assertDate("Sonntag, 1 Dez 1918", "EEEE, d MMM y", "UTC", "de");
     }
 
+    /**
+     * When using jdk9 or newer, make sure to set the {@code java.locale.providers = COMPAT,SPI}
+     * @see <a href="https://docs.oracle.com/javase/9/docs/api/java/util/spi/LocaleServiceProvider.html">LocaleServiceProvider</a>
+     */
     @Test
-    @Ignore("ambiguous results depending on the jdk version and implementation used")
     public void testDateFormatWithFormatStyleShort() {
         assertDate("01/12/18", "short", "GMT+02:00", "fr");
     }
