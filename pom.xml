@@ -65,7 +65,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>-Djava.locale.providers=COMPAT,JRE,SPI</argLine>
+                    <argLine>@{argLine} -Djava.locale.providers=COMPAT,JRE,SPI</argLine>
                 </configuration>
             </plugin>
             <plugin>
