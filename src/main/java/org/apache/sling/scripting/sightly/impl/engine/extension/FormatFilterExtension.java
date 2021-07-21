@@ -84,7 +84,6 @@ public class FormatFilterExtension implements RuntimeExtension {
 
         try {
             // try to parse as DateTimeFormatter
-            // TODO: check if this is dead code
             DateTimeFormatter.ofPattern(source);
             return getDateFormattedString(runtimeObjectModel, source, options, formatObject);
         } catch (IllegalArgumentException ex) {

@@ -20,6 +20,7 @@ package org.apache.sling.scripting.sightly.impl.engine.extension;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,14 +32,10 @@ import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.render.AbstractRuntimeObjectModel;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
-import org.hamcrest.CoreMatchers;
-import org.junit.Assume;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
 
 public class FormatFilterExtensionTest {
@@ -70,10 +67,16 @@ public class FormatFilterExtensionTest {
         }}));
     }
 
+    @Test
+    public void testDateFormatNoDateObject() {
+        assertNull(subject.call(renderContext, "yyyy-MM-dd", Collections.singletonMap(FormatFilterExtension.FORMAT, new Object())));
+    }
+
     @Test(expected = SightlyException.class)
     public void testDateFormatFalseFormat() {
         assertDate(null, "yT", null, null);
     }
+
 
     @Test
     public void testDateFormatWithUTC() {
