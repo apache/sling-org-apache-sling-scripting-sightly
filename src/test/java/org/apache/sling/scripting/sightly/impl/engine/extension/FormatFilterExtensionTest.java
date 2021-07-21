@@ -158,17 +158,4 @@ public class FormatFilterExtensionTest {
         }
         assertEquals(expected, subject.call(renderContext, format, options));
     }
-
-    private static int getJavaMajorVersion() {
-        String version = System.getProperty("java.version");
-        if (version.startsWith("1.")) {
-            return Integer.parseInt(version.substring(2, 3));
-        } else {
-            int dot = version.indexOf(".");
-            if (dot != -1) {
-                return Integer.parseInt(version.substring(0, dot));
-            }
-        }
-        return Integer.parseInt(version);
-    }
 }
