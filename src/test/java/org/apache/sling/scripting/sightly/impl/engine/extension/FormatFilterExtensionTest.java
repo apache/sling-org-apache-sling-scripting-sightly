@@ -34,8 +34,10 @@ import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assume.assumeThat;
 
 public class FormatFilterExtensionTest {
 
@@ -103,6 +105,7 @@ public class FormatFilterExtensionTest {
      */
     @Test
     public void testDateFormatWithEscapedCharacters() {
+        assumeJdk8LocaleData();
         assertDate("01 December '18 12:00 AM; day in year: 335; week in year: 49",
             "dd MMMM ''yy hh:mm a; 'day in year': D; 'week in year': w",
             "UTC",
@@ -116,6 +119,7 @@ public class FormatFilterExtensionTest {
      */
     @Test
     public void testDateFormatWithLocale() {
+        assumeJdk8LocaleData();
         assertDate("Sonntag, 1 Dez 1918", "EEEE, d MMM y", "UTC", "de");
     }
 
@@ -126,6 +130,7 @@ public class FormatFilterExtensionTest {
      */
     @Test
     public void testDateFormatWithFormatStyleShort() {
+        assumeJdk8LocaleData();
         assertDate("01/12/18", "short", "GMT+02:00", "fr");
     }
 
@@ -162,6 +167,12 @@ public class FormatFilterExtensionTest {
         assertDate("December", "MMMMM", "UTC", "en");
         assertDate("Sunday", "EEEEE", "UTC", "en");
         assertDate("Sonntag", "eeeee", "UTC", "de");
+    }
+
+    private void assumeJdk8LocaleData() {
+        if(!System.getProperty("java.version").startsWith("1.8")) {
+            assumeThat(System.getProperty("java.locale.providers"), startsWith("COMPAT"));
+        }
     }
 
     private void assertDate(String expected, String format, String timezone, String locale) {

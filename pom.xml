@@ -54,6 +54,8 @@
 
     <properties>
         <sling.java.version>8</sling.java.version>
+        <!-- There is significant difference between the locale data provided in JDK8 and starting with JDK9. In order to achieve
+        compatibility between newer versions of the JDK and JDK8, we use COMPAT as the default locale data provider for tests. -->
         <java.locale.providers>COMPAT,JRE,SPI</java.locale.providers>
     </properties>
 
