@@ -54,6 +54,9 @@
 
     <properties>
         <sling.java.version>8</sling.java.version>
+        <!-- There is significant difference between the locale data provided in JDK8 and starting with JDK9. In order to achieve
+        compatibility between newer versions of the JDK and JDK8, we use COMPAT as the default locale data provider for tests. -->
+        <java.locale.providers>COMPAT,JRE,SPI</java.locale.providers>
     </properties>
 
     <!-- ======================================================================= -->
@@ -61,6 +64,13 @@
     <!-- ======================================================================= -->
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-Djava.locale.providers=${java.locale.providers}</argLine>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
@@ -292,4 +302,20 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+        <profile>
+            <id>jacoco-report</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>@{argLine} -Djava.locale.providers=${java.locale.providers}</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
