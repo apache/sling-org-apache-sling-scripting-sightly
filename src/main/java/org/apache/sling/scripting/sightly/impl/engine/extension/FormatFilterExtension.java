@@ -75,25 +75,17 @@ public class FormatFilterExtension implements RuntimeExtension {
 
         String formattingType = runtimeObjectModel.toString(options.get(TYPE_OPTION));
         Object formatObject = options.get(FORMAT_OPTION);
-        boolean hasPlaceHolders = PLACEHOLDER_REGEX.matcher(source).find();
-        // Check for complex placeholders only if no simple placeholders were found. If simple placeholders were found getFormattedString()
-        // is called anyways and the source can be matched complex placeholders later.
-        Boolean hasComplexPlaceholders = null;
-        if (!hasPlaceHolders && hasIcuSupport) {
-            hasComplexPlaceholders = COMPLEX_PLACEHOLDER_REGEX.matcher(source).find();
-            hasPlaceHolders = hasComplexPlaceholders;
-        }
+        boolean hasPlaceHolders = PLACEHOLDER_REGEX.matcher(source).find() || COMPLEX_PLACEHOLDER_REGEX.matcher(source).find();
         if (STRING_FORMAT_TYPE.equals(formattingType)) {
-            return getFormattedString(runtimeObjectModel, source, options, formatObject, hasComplexPlaceholders);
+            return getFormattedString(runtimeObjectModel, source, options, formatObject);
         } else if (DATE_FORMAT_TYPE.equals(formattingType) || (!hasPlaceHolders && runtimeObjectModel.isDate(formatObject))) {
             return getDateFormattedString(runtimeObjectModel, source, options, formatObject);
         } else if (NUMBER_FORMAT_TYPE.equals(formattingType) || (!hasPlaceHolders && runtimeObjectModel.isNumber(formatObject))) {
             return getNumberFormattedString(runtimeObjectModel, source, options, formatObject);
         }
         if (hasPlaceHolders) {
-            return getFormattedString(runtimeObjectModel, source, options, formatObject, hasComplexPlaceholders);
+            return getFormattedString(runtimeObjectModel, source, options, formatObject);
         }
-
         try {
             // try to parse as DateTimeFormatter
             DateTimeFormatter.ofPattern(source);
@@ -108,23 +100,18 @@ public class FormatFilterExtension implements RuntimeExtension {
         } catch (IllegalArgumentException e) {
             // ignore
         }
-        return getFormattedString(runtimeObjectModel, source, options, formatObject, hasComplexPlaceholders);
+        return getFormattedString(runtimeObjectModel, source, options, formatObject);
     }
 
     private Object getFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options,
-                                      Object formatObject, Boolean hasComplexPlaceholders) {
+                                      Object formatObject) {
         Object[] params = decodeParams(runtimeObjectModel, formatObject);
-        if (hasIcuSupport) {
-            if (hasComplexPlaceholders == null) {
-                hasComplexPlaceholders = COMPLEX_PLACEHOLDER_REGEX.matcher(source).find();
-            }
-            if (hasComplexPlaceholders) {
-                Locale locale = getLocale(runtimeObjectModel, options);
-                return formatStringIcu(source, locale, params);
-            }
+        if (hasIcuSupport && COMPLEX_PLACEHOLDER_REGEX.matcher(source).find()) {
+            Locale locale = getLocale(runtimeObjectModel, options);
+            return formatStringIcu(runtimeObjectModel, source, locale, params);
+        } else {
+            return formatString(runtimeObjectModel, source, params);
         }
-
-        return formatString(runtimeObjectModel, source, params);
     }
 
     private String getNumberFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options,
@@ -180,29 +167,28 @@ public class FormatFilterExtension implements RuntimeExtension {
         Matcher matcher = PLACEHOLDER_REGEX.matcher(source);
         StringBuilder builder = new StringBuilder();
         int lastPos = 0;
-        boolean matched = true;
-        while (matched) {
-            matched = matcher.find();
-            if (matched) {
-                String group = matcher.group();
-                int paramIndex = Integer.parseInt(group.substring(1, group.length() - 1));
-                String replacement = toString(runtimeObjectModel, params, paramIndex);
-                int matchStart = matcher.start();
-                int matchEnd = matcher.end();
-                builder.append(source, lastPos, matchStart).append(replacement);
-                lastPos = matchEnd;
-            }
+        while (matcher.find()) {
+            String group = matcher.group();
+            int paramIndex = Integer.parseInt(group.substring(1, group.length() - 1));
+            String replacement = toString(runtimeObjectModel, params, paramIndex);
+            int matchStart = matcher.start();
+            int matchEnd = matcher.end();
+            builder.append(source, lastPos, matchStart).append(replacement);
+            lastPos = matchEnd;
         }
         builder.append(source, lastPos, source.length());
         return builder.toString();
     }
 
-    private String formatStringIcu(String source, Locale locale, Object[] params) {
-        MessageFormat messageFormat = new MessageFormat(source);
-        if (locale != null) {
-            messageFormat.setLocale(locale);
+    private String formatStringIcu(RuntimeObjectModel runtimeObjectModel, String source, Locale locale, Object[] params) {
+        try {
+            MessageFormat messageFormat = locale != null ? new MessageFormat(source, locale) : new MessageFormat(source);
+            return messageFormat.format(params);
+        } catch (NoClassDefFoundError ex) {
+            LOG.trace("ICU4J not found, falling back to simple pattern replacement.", ex);
+            hasIcuSupport = false;
+            return formatString(runtimeObjectModel, source, params);
         }
-        return messageFormat.format(params);
     }
 
     private String toString(RuntimeObjectModel runtimeObjectModel, Object[] params, int index) {
