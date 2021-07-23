@@ -106,9 +106,13 @@ public class FormatFilterExtension implements RuntimeExtension {
     private Object getFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options,
                                       Object formatObject) {
         Object[] params = decodeParams(runtimeObjectModel, formatObject);
-        if (hasIcuSupport && COMPLEX_PLACEHOLDER_REGEX.matcher(source).find()) {
-            Locale locale = getLocale(runtimeObjectModel, options);
-            return formatStringIcu(runtimeObjectModel, source, locale, params);
+        if (COMPLEX_PLACEHOLDER_REGEX.matcher(source).find()) {
+            if (hasIcuSupport) {
+                Locale locale = getLocale(runtimeObjectModel, options);
+                return formatStringIcu(source, locale, params);
+            } else {
+                return null;
+            }
         } else {
             return formatString(runtimeObjectModel, source, params);
         }
@@ -180,19 +184,20 @@ public class FormatFilterExtension implements RuntimeExtension {
         return builder.toString();
     }
 
-    private String formatStringIcu(RuntimeObjectModel runtimeObjectModel, String source, Locale locale, Object[] params) {
+    private String formatStringIcu(String source, Locale locale, Object[] params) {
         try {
             MessageFormat messageFormat = locale != null ? new MessageFormat(source, locale) : new MessageFormat(source);
             return messageFormat.format(params);
         } catch (NoClassDefFoundError ex) {
-            LOG.trace("ICU4J not found, falling back to simple pattern replacement.", ex);
+            LOG.trace("ICU4J not found", ex);
             hasIcuSupport = false;
-            return formatString(runtimeObjectModel, source, params);
+            return null;
         }
     }
 
     private String toString(RuntimeObjectModel runtimeObjectModel, Object[] params, int index) {
-        if (index >= 0 && index < params.length) {
+        // index can only be a signed integer according to FormatFilterExtension#PLACEHOLDER_REGEX
+        if (index < params.length) {
             return runtimeObjectModel.toString(params[index]);
         }
         return "";

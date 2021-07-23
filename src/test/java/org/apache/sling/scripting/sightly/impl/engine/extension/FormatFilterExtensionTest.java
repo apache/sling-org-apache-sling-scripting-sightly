@@ -189,10 +189,30 @@ public class FormatFilterExtensionTest {
     }
 
     @Test
+    public void testStringFormatNoParameters() {
+        Object result = subject.call(renderContext,"This {0} a {1} format", Collections.emptyMap());
+        assertNull(result);
+    }
+
+    @Test
     public void testSimpleStringFormat() {
         Object result = subject.call(renderContext,
             "This {0} a {1} format", Collections.singletonMap("format", Arrays.asList("is", "simple")));
         assertEquals("This is a simple format", result);
+    }
+
+    @Test
+    public void testSimpleStringFormatWithSingleParameter() {
+        Object result = subject.call(renderContext,
+            "Hello {0}", Collections.singletonMap("format", "world"));
+        assertEquals("Hello world", result);
+    }
+
+    @Test
+    public void testSimpleStringFormatWithParameterIndexOutOfBounds() {
+        Object result = subject.call(renderContext,
+            "This {0} a {1} format", Collections.singletonMap("format", Collections.singletonList("is")));
+        assertEquals("This is a  format", result);
     }
 
     @Test
@@ -220,6 +240,6 @@ public class FormatFilterExtensionTest {
         Object result = subject.call(renderContext,
             "This {0} has {1,plural,zero {{1} results} one {{1} result} other {{1} results}}",
             Collections.singletonMap("format", Arrays.asList("query", 7)));
-        assertEquals("This query has {1,plural,zero {7 results} one {7 result} other {7 results}}", result);
+        assertNull(result);
     }
 }
