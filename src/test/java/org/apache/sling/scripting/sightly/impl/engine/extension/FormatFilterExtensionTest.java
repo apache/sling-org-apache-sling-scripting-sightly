@@ -18,12 +18,18 @@
  ******************************************************************************/
 package org.apache.sling.scripting.sightly.impl.engine.extension;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Map;
 
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
 
+import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.render.AbstractRuntimeObjectModel;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
@@ -31,7 +37,10 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
 
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assume.assumeThat;
 
 public class FormatFilterExtensionTest {
 
@@ -50,11 +59,141 @@ public class FormatFilterExtensionTest {
         }
     };
     private final FormatFilterExtension subject = new FormatFilterExtension();
+    private final Date testDate = Date.from(LocalDateTime.of(1918, 12, 1, 0, 0, 0, 0)
+        .atZone(ZoneId.of("UTC"))
+        .toInstant());
+
+    @Test
+    public void testDateFormatNull() {
+        assertNull(subject.call(renderContext, "default", new HashMap<String, Object>() {{
+            put(FormatFilterExtension.TYPE_OPTION, "date");
+            put(FormatFilterExtension.FORMAT, null);
+        }}));
+    }
+
+    @Test
+    public void testDateFormatNoDateObject() {
+        assertNull(subject.call(renderContext, "yyyy-MM-dd", Collections.singletonMap(FormatFilterExtension.FORMAT, new Object())));
+    }
+
+    @Test(expected = SightlyException.class)
+    public void testDateFormatFalseFormat() {
+        assertDate(null, "yT", null, null);
+    }
+
+    @Test
+    public void testDateFormatWithUTC() {
+        assertDate("1918-12-01 00:00:00.000Z", "yyyy-MM-dd HH:mm:ss.SSSXXX", "UTC", null);
+    }
+
+    @Test
+    public void testDateFormatWithZoneOffset() {
+        assertDate("1918-12-01 02:00:00.000+02:00", "yyyy-MM-dd HH:mm:ss.SSSXXX", "GMT+02:00", null);
+    }
+
+    @Test
+    public void testDateFormatWithZoneOffsetRFC822() {
+        assertDate("1918-12-01 02:00:00.000+0200", "yyyy-MM-dd HH:mm:ss.SSSZ", "GMT+02:00", null);
+    }
+
+    @Test
+    public void testDateFormatWithZoneName() {
+        assertDate("1918-12-01 02:00:00.000(GMT+02:00)", "yyyy-MM-dd HH:mm:ss.SSS(z)", "GMT+02:00", null);
+    }
+
+    /**
+     * When using jdk9 or newer, make sure to set the {@code java.locale.providers = COMPAT,SPI}
+     *
+     * @see <a href="https://docs.oracle.com/javase/9/docs/api/java/util/spi/LocaleServiceProvider.html">LocaleServiceProvider</a>
+     */
+    @Test
+    public void testDateFormatWithEscapedCharacters() {
+        assumeJdk8LocaleData();
+        assertDate("01 December '18 12:00 AM; day in year: 335; week in year: 49",
+            "dd MMMM ''yy hh:mm a; 'day in year': D; 'week in year': w",
+            "UTC",
+            null);
+    }
+
+    /**
+     * When using jdk9 or newer, make sure to set the {@code java.locale.providers = COMPAT,SPI}
+     *
+     * @see <a href="https://docs.oracle.com/javase/9/docs/api/java/util/spi/LocaleServiceProvider.html">LocaleServiceProvider</a>
+     */
+    @Test
+    public void testDateFormatWithLocale() {
+        assumeJdk8LocaleData();
+        assertDate("Sonntag, 1 Dez 1918", "EEEE, d MMM y", "UTC", "de");
+    }
+
+    /**
+     * When using jdk9 or newer, make sure to set the {@code java.locale.providers = COMPAT,SPI}
+     *
+     * @see <a href="https://docs.oracle.com/javase/9/docs/api/java/util/spi/LocaleServiceProvider.html">LocaleServiceProvider</a>
+     */
+    @Test
+    public void testDateFormatWithFormatStyleShort() {
+        assumeJdk8LocaleData();
+        assertDate("01/12/18", "short", "GMT+02:00", "fr");
+    }
+
+    @Test
+    public void testDateFormatWithFormatStyleMedium() {
+        assertDate("1 déc. 1918", "medium", "GMT+02:00", "fr");
+    }
+
+    @Test
+    public void testDateFormatWithFormatStyleDefault() {
+        assertDate("1 déc. 1918", "default", "GMT+02:00", "fr");
+    }
+
+    @Test
+    public void testDateFormatWithFormatStyleLong() {
+        assertDate("1 décembre 1918", "long", "GMT+02:00", "fr");
+    }
+
+    @Test
+    public void testDateFormatWithFormatStyleFull() {
+        assertDate("dimanche 1 décembre 1918", "full", "GMT+02:00", "fr");
+    }
+
+    @Test
+    public void testDateFormatMixedWithReservedCharacters() {
+        assertEquals("#1: 1918 {0}", subject.call(renderContext, "#1: yyyy {0}", new HashMap<String, Object>() {{
+            put(FormatFilterExtension.TYPE_OPTION, FormatFilterExtension.DATE_FORMAT_TYPE);
+            put(FormatFilterExtension.FORMAT_OPTION, testDate);
+        }}));
+    }
+
+    @Test
+    public void testDateFormatNoNarrowForm() {
+        assertDate("December", "MMMMM", "UTC", "en");
+        assertDate("Sunday", "EEEEE", "UTC", "en");
+        assertDate("Sonntag", "eeeee", "UTC", "de");
+    }
+
+    private void assumeJdk8LocaleData() {
+        if(!System.getProperty("java.version").startsWith("1.8")) {
+            assumeThat(System.getProperty("java.locale.providers"), startsWith("COMPAT"));
+        }
+    }
+
+    private void assertDate(String expected, String format, String timezone, String locale) {
+        Map<String, Object> options = new HashMap<>();
+        options.put(FormatFilterExtension.FORMAT, testDate);
+        if (timezone != null) {
+            options.put(FormatFilterExtension.TIMEZONE_OPTION, timezone);
+        }
+        if (locale != null) {
+            options.put(FormatFilterExtension.LOCALE_OPTION, locale);
+        }
+        assertEquals(expected, subject.call(renderContext, format, options));
+    }
 
     @Test
     public void testSimpleFormat() {
         Object result = subject.call(renderContext,
-            "This {0} a {1} format", ImmutableMap.of("format", Arrays.asList("is", "simple")));
+            "This {0} a {1} format", Collections.singletonMap("format", Arrays.asList("is", "simple")));
         assertEquals("This is a simple format", result);
     }
 
@@ -63,7 +202,7 @@ public class FormatFilterExtensionTest {
         Object result = subject.call(renderContext,
             "This query has {0,plural,zero {# results} one {# result} other {# results}}",
             new HashMap<String, Object>() {{
-                put("format", Arrays.asList(7));
+                put("format", Collections.singletonList(7));
                 put("locale", "en_US");
             }});
         assertEquals("This query has 7 results", result);
@@ -73,7 +212,7 @@ public class FormatFilterExtensionTest {
     public void testComplexFormatWithSimplePlaceholderNoLocale() {
         Object result = subject.call(renderContext,
             "This {0} has {1,plural,zero {# results} one {# result} other {# results}}",
-            ImmutableMap.of("format", Arrays.asList("query", 7)));
+            Collections.singletonMap("format", Arrays.asList("query", 7)));
         assertEquals("This query has 7 results", result);
     }
 }

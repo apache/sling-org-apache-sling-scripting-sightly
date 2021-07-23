@@ -18,11 +18,11 @@
  ******************************************************************************/
 package org.apache.sling.scripting.sightly.impl.engine.extension;
 
-import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
@@ -51,29 +51,20 @@ import com.ibm.icu.text.MessageFormat;
 )
 public class FormatFilterExtension implements RuntimeExtension {
 
-    static boolean hasIcuSupport;
+    protected static final String FORMAT_OPTION = "format";
+    protected static final String TYPE_OPTION = "type";
+    protected static final String LOCALE_OPTION = "locale";
+    protected static final String TIMEZONE_OPTION = "timezone";
+
+    protected static final String DATE_FORMAT_TYPE = "date";
+    protected static final String NUMBER_FORMAT_TYPE = "number";
+    protected static final String STRING_FORMAT_TYPE = "string";
 
     private static final Logger LOG = LoggerFactory.getLogger(FormatFilterExtension.class);
     private static final Pattern PLACEHOLDER_REGEX = Pattern.compile("\\{\\d+}");
     private static final Pattern COMPLEX_PLACEHOLDER_REGEX = Pattern.compile("\\{\\d+,[^}]+}");
-    private static final String FORMAT_OPTION = "format";
-    private static final String TYPE_OPTION = "type";
-    private static final String LOCALE_OPTION = "locale";
-    private static final String TIMEZONE_OPTION = "timezone";
 
-    private static final String DATE_FORMAT_TYPE = "date";
-    private static final String NUMBER_FORMAT_TYPE = "number";
-    private static final String STRING_FORMAT_TYPE = "string";
-
-    static {
-        try {
-            FormatFilterExtension.class.getClassLoader().loadClass("com.ibm.icu.text.MessageFormat");
-            hasIcuSupport = true;
-        } catch (ClassNotFoundException ex) {
-            LOG.trace("Initialize without ICU support: {}", ex.getMessage(), ex);
-            hasIcuSupport = false;
-        }
-    }
+    private boolean hasIcuSupport = true;
 
     @Override
     public Object call(final RenderContext renderContext, Object... arguments) {
@@ -102,12 +93,13 @@ public class FormatFilterExtension implements RuntimeExtension {
         if (hasPlaceHolders) {
             return getFormattedString(runtimeObjectModel, source, options, formatObject, hasComplexPlaceholders);
         }
+
         try {
-            // somebody will hate me for this
-            new SimpleDateFormat(source);
+            // try to parse as DateTimeFormatter
+            DateTimeFormatter.ofPattern(source);
             return getDateFormattedString(runtimeObjectModel, source, options, formatObject);
-        } catch (IllegalArgumentException e) {
-            // ignore
+        } catch (IllegalArgumentException ex) {
+            LOG.trace("Not a datetime format: {}", source, ex);
         }
         try {
             // for this too, but such is life
@@ -220,20 +212,19 @@ public class FormatFilterExtension implements RuntimeExtension {
         return "";
     }
 
-    private int getPredefinedFormattingStyleFromValue(String value) {
+    private FormatStyle getPredefinedFormattingStyleFromValue(String value) {
         switch (value.toLowerCase(Locale.ROOT)) {
             case "default":
-                return DateFormat.DEFAULT;
-            case "short":
-                return DateFormat.SHORT;
             case "medium":
-                return DateFormat.MEDIUM;
+                return FormatStyle.MEDIUM;
+            case "short":
+                return FormatStyle.SHORT;
             case "long":
-                return DateFormat.LONG;
+                return FormatStyle.LONG;
             case "full":
-                return DateFormat.FULL;
+                return FormatStyle.FULL;
             default:
-                return -1;
+                return null;
         }
     }
 
@@ -242,25 +233,26 @@ public class FormatFilterExtension implements RuntimeExtension {
             return null;
         }
         try {
-            final DateFormat formatter;
-            int formattingStyle = getPredefinedFormattingStyleFromValue(format);
-            if (formattingStyle != -1) {
+            DateTimeFormatter formatter;
+            FormatStyle formattingStyle = getPredefinedFormattingStyleFromValue(format);
+            if (formattingStyle != null) {
+                formatter = DateTimeFormatter.ofLocalizedDate(formattingStyle);
                 if (locale != null) {
-                    formatter = DateFormat.getDateInstance(formattingStyle, locale);
-                } else {
-                    formatter = DateFormat.getDateInstance(formattingStyle);
+                    formatter = formatter.withLocale(locale);
                 }
             } else {
+                // escape reserved characters, that are allowed according to the htl-tck
+                format =  format.replaceAll("([{}#])", "'$1'");
+                // normalized text narrow form to full form to be compatible with java.text.SimpleDateFormat
+                // for example EEEEE becomes EEEE
+                format = format.replaceAll("([GMLQqEec])\\1{4}", "$1$1$1$1");
                 if (locale != null) {
-                    formatter = new SimpleDateFormat(format, locale);
+                    formatter = DateTimeFormatter.ofPattern(format, locale);
                 } else {
-                    formatter = new SimpleDateFormat(format);
+                    formatter = DateTimeFormatter.ofPattern(format);
                 }
             }
-            if (timezone != null) {
-                formatter.setTimeZone(timezone);
-            }
-            return formatter.format(date);
+            return formatter.format(timezone != null ? date.toInstant().atZone(timezone.toZoneId()) : date.toInstant());
         } catch (Exception e) {
             String error = String.format("Error during formatting of date %s with format %s, locale %s and timezone %s", date, format, locale, timezone);
             throw new SightlyException( error, e);
