@@ -64,7 +64,7 @@ public class FormatFilterExtension implements RuntimeExtension {
     private static final Pattern PLACEHOLDER_REGEX = Pattern.compile("\\{\\d+}");
     private static final Pattern COMPLEX_PLACEHOLDER_REGEX = Pattern.compile("\\{\\d+,[^}]+}");
 
-    private boolean hasIcuSupport = true;
+    protected boolean hasIcuSupport = true;
 
     @Override
     public Object call(final RenderContext renderContext, Object... arguments) {

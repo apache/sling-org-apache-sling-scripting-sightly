@@ -35,8 +35,6 @@ import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableMap;
-
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -191,14 +189,14 @@ public class FormatFilterExtensionTest {
     }
 
     @Test
-    public void testSimpleFormat() {
+    public void testSimpleStringFormat() {
         Object result = subject.call(renderContext,
             "This {0} a {1} format", Collections.singletonMap("format", Arrays.asList("is", "simple")));
         assertEquals("This is a simple format", result);
     }
 
     @Test
-    public void testComplexFormatNoSimplePlaceholderWithLocale() {
+    public void testComplexStringFormatNoSimplePlaceholderWithLocale() {
         Object result = subject.call(renderContext,
             "This query has {0,plural,zero {# results} one {# result} other {# results}}",
             new HashMap<String, Object>() {{
@@ -209,10 +207,19 @@ public class FormatFilterExtensionTest {
     }
 
     @Test
-    public void testComplexFormatWithSimplePlaceholderNoLocale() {
+    public void testComplexStringFormatWithSimplePlaceholderNoLocale() {
         Object result = subject.call(renderContext,
             "This {0} has {1,plural,zero {# results} one {# result} other {# results}}",
             Collections.singletonMap("format", Arrays.asList("query", 7)));
         assertEquals("This query has 7 results", result);
+    }
+
+    @Test
+    public void testComplexStringFormatWithSimplePlaceholderNoIcuSupport() {
+        subject.hasIcuSupport = false;
+        Object result = subject.call(renderContext,
+            "This {0} has {1,plural,zero {{1} results} one {{1} result} other {{1} results}}",
+            Collections.singletonMap("format", Arrays.asList("query", 7)));
+        assertEquals("This query has {1,plural,zero {7 results} one {7 result} other {7 results}}", result);
     }
 }
