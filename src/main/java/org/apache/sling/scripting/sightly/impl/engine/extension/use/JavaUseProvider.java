@@ -214,6 +214,9 @@ public class JavaUseProvider implements UseProvider {
                 LOG.debug("Won't attempt to instantiate an interface or abstract class {}", cls.getName());
                 return ProviderOutcome.failure(new IllegalArgumentException(String.format(" %s represents an interface or an abstract " +
                         "class which cannot be instantiated.", cls.getName())));
+            } else if (cls.isEnum()) {
+                // for enum, just return the class
+                return ProviderOutcome.success(cls);
             } else {
                 /*
                  * the object was cached by the class loader but it's not adaptable from {@link Resource} or {@link
