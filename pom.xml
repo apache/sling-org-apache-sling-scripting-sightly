@@ -25,7 +25,7 @@
     <parent>
         <groupId>org.apache.sling</groupId>
         <artifactId>sling-bundle-parent</artifactId>
-        <version>38</version>
+        <version>44</version>
         <relativePath />
     </parent>
 
@@ -57,6 +57,7 @@
         <!-- There is significant difference between the locale data provided in JDK8 and starting with JDK9. In order to achieve
         compatibility between newer versions of the JDK and JDK8, we use COMPAT as the default locale data provider for tests. -->
         <java.locale.providers>COMPAT,JRE,SPI</java.locale.providers>
+        <project.build.outputTimestamp>2021-04-23T16:34:16Z</project.build.outputTimestamp>
     </properties>
 
     <!-- ======================================================================= -->
@@ -101,6 +102,41 @@
                 </configuration>
             </plugin>
         </plugins>
+        <pluginManagement>
+            <plugins>
+                <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>
+                                            com.github.spotbugs
+                                        </groupId>
+                                        <artifactId>
+                                            spotbugs-maven-plugin
+                                        </artifactId>
+                                        <versionRange>
+                                            [3.1.11,)
+                                        </versionRange>
+                                        <goals>
+                                            <goal>check</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore></ignore>
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 
     <!-- ======================================================================= -->
@@ -266,7 +302,6 @@
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>16.0.2</version>
             <scope>provided</scope>
         </dependency>
 
