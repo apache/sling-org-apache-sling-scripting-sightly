@@ -346,7 +346,10 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <argLine>@{argLine} -Djava.locale.providers=${java.locale.providers}</argLine>
+                            <!-- SLING-10766 this argLine replaces the value from the parent pom so we need
+                                 make sure to use a late-binding copy of the jacoco.command defined elsewhere
+                                 before appending the extra system property to it. -->
+                            <argLine>@{jacoco.command} -Djava.locale.providers=${java.locale.providers}</argLine>
                         </configuration>
                     </plugin>
                 </plugins>
