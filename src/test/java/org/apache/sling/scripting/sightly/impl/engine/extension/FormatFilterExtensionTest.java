@@ -23,6 +23,7 @@ import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.script.Bindings;
@@ -106,10 +107,10 @@ public class FormatFilterExtensionTest {
     @Test
     public void testDateFormatWithEscapedCharacters() {
         assumeJdk8LocaleData();
-        assertDate("01 December '18 12:00 AM; day in year: 335; week in year: 49",
+        assertDate("01 December '18 12:00 AM; day in year: 335; week in year: 48",
             "dd MMMM ''yy hh:mm a; 'day in year': D; 'week in year': w",
             "UTC",
-            null);
+            Locale.UK.toString());
     }
 
     /**
