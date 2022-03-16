@@ -317,13 +317,8 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
             }
         } else if (addSelectorsOption instanceof Object[]) {
             Object[] selectorsURIArray = (Object[]) addSelectorsOption;
-            String[] selectorsArray = new String[selectorsURIArray.length];
-            int index = 0;
             for (Object selector : selectorsURIArray) {
-                selectorsArray[index++] = runtimeObjectModel.toString(selector);
-            }
-            for(String selector : selectorsArray) {
-                requestPathInfo.addSelector(selector);
+                requestPathInfo.addSelector(runtimeObjectModel.toString(selector));
             }
         }
         Object removeSelectorsOption = options.get(REMOVE_SELECTORS);
@@ -331,9 +326,7 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
             String selectorString = (String) removeSelectorsOption;
             String[] selectorsArray = selectorString.split("\\.");
             final List<String> selectors = new ArrayList<>(Arrays.asList(requestPathInfo.getSelectors()));
-            for(String selector : selectorsArray) {
-                selectors.remove(selector);
-            }
+            selectors.removeAll(Arrays.asList(selectorsArray));
             requestPathInfo.setSelectors(selectors.toArray(new String[selectors.size()]));
         } else if (removeSelectorsOption instanceof Object[]) {
             Object[] selectorsURIArray = (Object[]) removeSelectorsOption;
@@ -343,9 +336,7 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
                 selectorsArray[index++] = runtimeObjectModel.toString(selector);
             }
             final List<String> selectors = new ArrayList<>(Arrays.asList(requestPathInfo.getSelectors()));
-            for(String selector : selectorsArray) {
-                selectors.remove(selector);
-            }
+            selectors.removeAll(Arrays.asList(selectorsArray));
             requestPathInfo.setSelectors(selectors.toArray(new String[selectors.size()]));
         }
     }
