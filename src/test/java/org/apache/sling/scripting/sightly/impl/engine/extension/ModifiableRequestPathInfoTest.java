@@ -24,6 +24,8 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import org.apache.sling.api.uri.SlingUriBuilder;
+
 public class ModifiableRequestPathInfoTest {
 
     private static final String EMPTY = "";
@@ -33,20 +35,18 @@ public class ModifiableRequestPathInfoTest {
     private static final String EXTENSION = "html";
     private static final String SUFFIX = "/suffix1/suffix2";
 
-    private static final URIManipulationFilterExtension.ModifiableRequestPathInfo emptyPathInfo =
-            new URIManipulationFilterExtension.ModifiableRequestPathInfo(EMPTY);
-    private static final URIManipulationFilterExtension.ModifiableRequestPathInfo simplePath =
-            new URIManipulationFilterExtension.ModifiableRequestPathInfo(PATH);
-    private static final URIManipulationFilterExtension.ModifiableRequestPathInfo
-            pathWithExtension = new URIManipulationFilterExtension.ModifiableRequestPathInfo(PATH + "." + EXTENSION);
-    private static final URIManipulationFilterExtension.ModifiableRequestPathInfo
-            pathWithSelectors =
-            new URIManipulationFilterExtension.ModifiableRequestPathInfo(PATH + "." + SELECTOR_STRING + "." + EXTENSION);
-    private static final URIManipulationFilterExtension.ModifiableRequestPathInfo
-            pathWithSelectorsSuffix =
-            new URIManipulationFilterExtension.ModifiableRequestPathInfo(PATH + "." + SELECTOR_STRING + "." + EXTENSION + SUFFIX);
-    private static final URIManipulationFilterExtension.ModifiableRequestPathInfo
-            pathWithMultipleDotsSuffix = new URIManipulationFilterExtension.ModifiableRequestPathInfo(
+    private static final SlingUriBuilder emptyPathInfo =
+            SlingUriBuilder.create().setPath(EMPTY);
+    private static final SlingUriBuilder simplePath =
+            SlingUriBuilder.create().setPath(PATH);
+    private static final SlingUriBuilder
+            pathWithExtension = SlingUriBuilder.create().setPath(PATH + "." + EXTENSION);
+    private static final SlingUriBuilder
+            pathWithSelectors = SlingUriBuilder.create().setPath(PATH + "." + SELECTOR_STRING + "." + EXTENSION);
+    private static final SlingUriBuilder
+            pathWithSelectorsSuffix = SlingUriBuilder.create().setPath(PATH + "." + SELECTOR_STRING + "." + EXTENSION + SUFFIX);
+    private static final SlingUriBuilder
+            pathWithMultipleDotsSuffix = SlingUriBuilder.create().setPath(
             "test/child.name/resource." + SELECTOR_STRING + "." + EXTENSION + SUFFIX);
 
 

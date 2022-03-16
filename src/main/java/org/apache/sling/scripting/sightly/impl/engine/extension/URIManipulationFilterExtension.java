@@ -35,6 +35,8 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.request.RequestPathInfo;
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.uri.SlingUri;
+import org.apache.sling.api.uri.SlingUriBuilder;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.render.RenderContext;
@@ -187,7 +189,7 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
     }
 
     private String getPath(RuntimeObjectModel runtimeObjectModel, String originalPath, Map<String, Object> options, boolean isAbsolute) {
-        ModifiableRequestPathInfo requestPathInfo = new ModifiableRequestPathInfo(originalPath);
+        SlingUriBuilder requestPathInfo = SlingUriBuilder.parse(originalPath, null);
         final String prependPath = getOption(PREPEND_PATH, options, StringUtils.EMPTY, true);
         final String path =
                 getOption(PATH, options, requestPathInfo.getResourcePath(), true); // empty path option should not remove existing path!
@@ -225,9 +227,9 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
             if (!newSuffix.startsWith("/")) {
                 newSuffix = '/' + newSuffix;
             }
+            requestPathInfo.setSuffix(newSuffix);
         }
-        requestPathInfo.setSuffix(newSuffix);
-        return requestPathInfo.toString();
+        return requestPathInfo.build().toString();
     }
 
     private String getEscapedQuery(RuntimeObjectModel runtimeObjectModel, String originalQuery, Map<String, Object> options) {
@@ -285,17 +287,17 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
         return originalQuery;
     }
 
-    private void handleSelectors(RuntimeObjectModel runtimeObjectModel, ModifiableRequestPathInfo requestPathInfo,
+    private void handleSelectors(RuntimeObjectModel runtimeObjectModel, SlingUriBuilder requestPathInfo,
                                  Map<String, Object> options) {
         if (options.containsKey(SELECTORS)) {
             Object selectorsOption = options.get(SELECTORS);
             if (selectorsOption == null) {
                 // we want to remove all selectors
-                requestPathInfo.clearSelectors();
+                requestPathInfo.setSelectors(null);
             } else if (selectorsOption instanceof String) {
                 String selectorString = (String) selectorsOption;
                 String[] selectorsArray = selectorString.split("\\.");
-                requestPathInfo.replaceSelectors(selectorsArray);
+                requestPathInfo.setSelectors(selectorsArray);
             } else if (selectorsOption instanceof Object[]) {
                 Object[] selectorsURIArray = (Object[]) selectorsOption;
                 String[] selectorsArray = new String[selectorsURIArray.length];
@@ -303,14 +305,16 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
                 for (Object selector : selectorsURIArray) {
                     selectorsArray[index++] = runtimeObjectModel.toString(selector);
                 }
-                requestPathInfo.replaceSelectors(selectorsArray);
+                requestPathInfo.setSelectors(selectorsArray);
             }
         }
         Object addSelectorsOption = options.get(ADD_SELECTORS);
         if (addSelectorsOption instanceof String) {
             String selectorString = (String) addSelectorsOption;
             String[] selectorsArray = selectorString.split("\\.");
-            requestPathInfo.addSelectors(selectorsArray);
+            for(String selector : selectorsArray) {
+                requestPathInfo.addSelector(selector);
+            }
         } else if (addSelectorsOption instanceof Object[]) {
             Object[] selectorsURIArray = (Object[]) addSelectorsOption;
             String[] selectorsArray = new String[selectorsURIArray.length];
@@ -318,13 +322,19 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
             for (Object selector : selectorsURIArray) {
                 selectorsArray[index++] = runtimeObjectModel.toString(selector);
             }
-            requestPathInfo.addSelectors(selectorsArray);
+            for(String selector : selectorsArray) {
+                requestPathInfo.addSelector(selector);
+            }
         }
         Object removeSelectorsOption = options.get(REMOVE_SELECTORS);
         if (removeSelectorsOption instanceof String) {
             String selectorString = (String) removeSelectorsOption;
             String[] selectorsArray = selectorString.split("\\.");
-            requestPathInfo.removeSelectors(selectorsArray);
+            final List<String> selectors = new ArrayList<>(Arrays.asList(requestPathInfo.getSelectors()));
+            for(String selector : selectorsArray) {
+                selectors.remove(selector);
+            }
+            requestPathInfo.setSelectors(selectors.toArray(new String[selectors.size()]));
         } else if (removeSelectorsOption instanceof Object[]) {
             Object[] selectorsURIArray = (Object[]) removeSelectorsOption;
             String[] selectorsArray = new String[selectorsURIArray.length];
@@ -332,7 +342,11 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
             for (Object selector : selectorsURIArray) {
                 selectorsArray[index++] = runtimeObjectModel.toString(selector);
             }
-            requestPathInfo.removeSelectors(selectorsArray);
+            final List<String> selectors = new ArrayList<>(Arrays.asList(requestPathInfo.getSelectors()));
+            for(String selector : selectorsArray) {
+                selectors.remove(selector);
+            }
+            requestPathInfo.setSelectors(selectors.toArray(new String[selectors.size()]));
         }
     }
 
@@ -390,163 +404,6 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
         }
     }
 
-    static class ModifiableRequestPathInfo implements RequestPathInfo {
 
-        private String resourcePath;
-        private List<String> selectors;
-        private String extension;
-        private String suffix;
-
-        /**
-         * Creates the {@link RequestPathInfo} object based on a request path only.
-         * This utility does not take this into account any underlying repository structure and
-         * just uses the first dot to split resource path from the rest!
-         * {@code org.apache.sling.servlets.resolver.internal.DecomposedUrl} uses the same logic!
-         *
-         * @param path the full normalized path (no '.', '..', or double slashes8) of the request, including the query parameters
-         * @throws NullPointerException if the supplied {@code path} is null
-         */
-        ModifiableRequestPathInfo(String path) {
-            if (path == null) {
-                throw new NullPointerException("The path parameter cannot be null.");
-            }
-            selectors = new LinkedList<>();
-            // get relevant parts
-            int firstDot = path.indexOf('.');
-
-            // the extra path in the request URI
-            final String pathToParse;
-            if (firstDot >= 0) {
-                pathToParse = path.substring(firstDot);
-                resourcePath = path.substring(0, firstDot);
-            } else {
-                pathToParse = "";
-                resourcePath = path;
-            }
-
-            // use logic from org.apache.sling.engine.impl.request.SlingRequestPathInfo
-            // separate selectors/ext from the suffix
-            int firstSlash = pathToParse.indexOf('/');
-            String pathToSplit;
-            if (firstSlash < 0) {
-                pathToSplit = pathToParse;
-                suffix = null;
-            } else {
-                pathToSplit = pathToParse.substring(0, firstSlash);
-                suffix = pathToParse.substring(firstSlash);
-            }
-
-            int lastDot = pathToSplit.lastIndexOf('.');
-
-            if (lastDot > 1) {
-                // no selectors if splitting would give an empty array
-                String tmpSel = pathToSplit.substring(1, lastDot);
-                selectors.addAll(Arrays.asList(tmpSel.split("\\.")));
-
-            }
-
-            // extension only if lastDot is not trailing
-            extension = (lastDot + 1 < pathToSplit.length())
-                    ? pathToSplit.substring(lastDot + 1) : null;
-        }
-
-        void setExtension(String extension) {
-            this.extension = extension;
-        }
-
-        void setSuffix(String suffix) {
-            this.suffix = suffix;
-        }
-
-        @Override
-        @NotNull
-        public String getResourcePath() {
-            return resourcePath;
-        }
-
-        void setResourcePath(String path) {
-            this.resourcePath = path;
-        }
-
-        /**
-         * Returns the extension.
-         *
-         * @return the extension, if one exists, otherwise {@code null}
-         */
-        @Override
-        public String getExtension() {
-            return extension;
-        }
-
-        /**
-         * Returns the selector string.
-         *
-         * @return the selector string, if the path has selectors, otherwise {@code null}
-         */
-        @Override
-        public String getSelectorString() {
-            throw new UnsupportedOperationException();
-        }
-
-        /**
-         * Returns the suffix appended to the path. The suffix represents the path segment between the path's extension and the path's
-         * fragment.
-         *
-         * @return the suffix if the path contains one, {@code null} otherwise
-         */
-        @Override
-        public String getSuffix() {
-            return suffix;
-        }
-
-        @Override
-        @NotNull
-        public String[] getSelectors() {
-            return selectors.toArray(new String[]{});
-        }
-
-        @Override
-        public Resource getSuffixResource() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public String toString() {
-            // resourcePath + selectors + extension + suffix
-            StringBuilder sb = new StringBuilder(getResourcePath());
-            if (getSelectors().length > 0) {
-                for (String selector : selectors) {
-                    if (StringUtils.isNotBlank(selector) && !selector.contains(" ")) {
-                        // make sure not to append empty or invalid selectors
-                        sb.append(".").append(selector);
-                    }
-                }
-            }
-            if (StringUtils.isNotEmpty(getExtension())) {
-                sb.append('.').append(getExtension());
-            }
-            if (StringUtils.isNotEmpty(getSuffix())) {
-                sb.append(getSuffix());
-            }
-            return sb.toString();
-        }
-
-        void replaceSelectors(String[] selectorsArray) {
-            selectors.clear();
-            selectors.addAll(Arrays.asList(selectorsArray));
-        }
-
-        void addSelectors(String[] selectorsArray) {
-            selectors.addAll(Arrays.asList(selectorsArray));
-        }
-
-        void removeSelectors(String[] selectorsArray) {
-            selectors.removeAll(Arrays.asList(selectorsArray));
-        }
-
-        void clearSelectors() {
-            selectors.clear();
-        }
-    }
 
 }
