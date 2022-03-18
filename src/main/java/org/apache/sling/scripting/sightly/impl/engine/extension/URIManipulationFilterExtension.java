@@ -25,23 +25,16 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.sling.api.request.RequestPathInfo;
-import org.apache.sling.api.resource.Resource;
-import org.apache.sling.api.uri.SlingUri;
 import org.apache.sling.api.uri.SlingUriBuilder;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
-import org.jetbrains.annotations.NotNull;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -287,8 +280,8 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
         return originalQuery;
     }
 
-    private void handleSelectors(RuntimeObjectModel runtimeObjectModel, SlingUriBuilder requestPathInfo,
-                                 Map<String, Object> options) {
+    void handleSelectors(RuntimeObjectModel runtimeObjectModel, SlingUriBuilder requestPathInfo,
+                                Map<String, Object> options) {
         if (options.containsKey(SELECTORS)) {
             Object selectorsOption = options.get(SELECTORS);
             if (selectorsOption == null) {
@@ -325,19 +318,14 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
         if (removeSelectorsOption instanceof String) {
             String selectorString = (String) removeSelectorsOption;
             String[] selectorsArray = selectorString.split("\\.");
-            final List<String> selectors = new ArrayList<>(Arrays.asList(requestPathInfo.getSelectors()));
-            selectors.removeAll(Arrays.asList(selectorsArray));
-            requestPathInfo.setSelectors(selectors.toArray(new String[selectors.size()]));
+            for(String selector : selectorsArray) {
+                requestPathInfo.removeSelector(selector);
+            }
         } else if (removeSelectorsOption instanceof Object[]) {
             Object[] selectorsURIArray = (Object[]) removeSelectorsOption;
-            String[] selectorsArray = new String[selectorsURIArray.length];
-            int index = 0;
             for (Object selector : selectorsURIArray) {
-                selectorsArray[index++] = runtimeObjectModel.toString(selector);
+                requestPathInfo.removeSelector(runtimeObjectModel.toString(selector));
             }
-            final List<String> selectors = new ArrayList<>(Arrays.asList(requestPathInfo.getSelectors()));
-            selectors.removeAll(Arrays.asList(selectorsArray));
-            requestPathInfo.setSelectors(selectors.toArray(new String[selectors.size()]));
         }
     }
 
