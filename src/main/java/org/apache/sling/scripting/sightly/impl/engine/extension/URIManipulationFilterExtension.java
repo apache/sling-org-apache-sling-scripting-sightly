@@ -291,8 +291,12 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
                 requestPathInfo.setSelectors(null);
             } else if (selectorsOption instanceof String) {
                 String selectorString = (String) selectorsOption;
-                String[] selectorsArray = selectorString.split("\\.");
-                requestPathInfo.setSelectors(selectorsArray);
+                if ( StringUtils.isBlank(selectorString) ) {
+                    requestPathInfo.setSelectors(null);
+                } else {
+                    String[] selectorsArray = selectorString.split("\\.");
+                    requestPathInfo.setSelectors(selectorsArray);    
+                }
             } else if (selectorsOption instanceof Object[]) {
                 Object[] selectorsURIArray = (Object[]) selectorsOption;
                 String[] selectorsArray = new String[selectorsURIArray.length];
