@@ -154,12 +154,8 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
         if (StringUtils.isNotEmpty(value)) {
             return value;
         }
-        if (options.containsKey(key)) {
-            if (useDefaultIfEmpty) {
-                return defaultValue;
-            } else {
-                return null;
-            }
+        if (options.containsKey(key) && !useDefaultIfEmpty) {
+            return null;
         }
         return defaultValue;
     }
@@ -182,7 +178,7 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
     }
 
     private String getPath(RuntimeObjectModel runtimeObjectModel, String originalPath, Map<String, Object> options, boolean isAbsolute) {
-        SlingUriBuilder requestPathInfo = SlingUriBuilder.parse(originalPath, null);
+        SlingUriBuilder requestPathInfo = StringUtils.isBlank(originalPath) ? SlingUriBuilder.create() : SlingUriBuilder.parse(originalPath, null);
         final String prependPath = getOption(PREPEND_PATH, options, StringUtils.EMPTY, true);
         final String path =
                 getOption(PATH, options, requestPathInfo.getResourcePath(), true); // empty path option should not remove existing path!
