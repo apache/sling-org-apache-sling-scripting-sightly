@@ -191,7 +191,7 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
             // no not prepend/append if path is neither set initially nor through option
             LOG.debug("Do not modify path because original path was empty and not set through an option either!");
             // dealing with selectors, extension or suffix is not allowed then either
-            return requestPathInfo.toString();
+            return requestPathInfo.build().toString();
         } else {
             String newPath = concatenateWithSlashes(prependPath, path, appendPath);
 
@@ -221,6 +221,8 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
                 newSuffix = '/' + newSuffix;
             }
             requestPathInfo.setSuffix(newSuffix);
+        } else {
+            requestPathInfo.setSuffix(null);
         }
         return requestPathInfo.build().toString();
     }
