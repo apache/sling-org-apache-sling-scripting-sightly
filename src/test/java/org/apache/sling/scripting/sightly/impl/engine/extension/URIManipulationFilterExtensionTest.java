@@ -18,10 +18,13 @@ package org.apache.sling.scripting.sightly.impl.engine.extension;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
 
+import org.apache.sling.api.uri.SlingUriBuilder;
+import org.apache.sling.scripting.sightly.impl.engine.runtime.SlingRuntimeObjectModelTest;
 import org.apache.sling.scripting.sightly.render.AbstractRuntimeObjectModel;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
@@ -30,6 +33,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class URIManipulationFilterExtensionTest {
 
@@ -130,5 +134,72 @@ public class URIManipulationFilterExtensionTest {
                     put(URIManipulationFilterExtension.EXTENSION, "html");
                 }})
         );
+    }
+
+    @Test
+    public void testHandleSelectorsEmptyOptions() {
+        final SlingUriBuilder builder = SlingUriBuilder.create().setPath("/content.s1.s2.html");
+
+        underTest.handleSelectors(null, builder, Collections.emptyMap());
+        assertEquals("s1.s2", builder.getSelectorString());
+    }
+
+    @Test
+    public void testHandleSelectorsNullSelectors() {
+        final SlingUriBuilder builder = SlingUriBuilder.create().setPath("/content.s1.s2.html");
+
+        underTest.handleSelectors(null, builder, Collections.singletonMap("selectors", null));
+        assertNull(builder.getSelectorString());
+    }
+
+    @Test
+    public void testHandleSelectorsStringSelectors() {
+        final SlingUriBuilder builder = SlingUriBuilder.create().setPath("/content.s1.s2.html");
+
+        underTest.handleSelectors(null, builder, Collections.singletonMap("selectors", "a.b"));
+        assertEquals("a.b", builder.getSelectorString());
+    }
+
+    @Test
+    public void testHandleSelectorsStringArraySelectors() {
+        final SlingUriBuilder builder = SlingUriBuilder.create().setPath("/content.s1.s2.html");
+
+        final RuntimeObjectModel rom = new AbstractRuntimeObjectModel() {};
+        underTest.handleSelectors(rom, builder, Collections.singletonMap("selectors", new String[] {"a.b"}));
+        assertEquals("a.b", builder.getSelectorString());
+    }
+
+    @Test
+    public void testHandleSelectorsStringAddSelectors() {
+        final SlingUriBuilder builder = SlingUriBuilder.create().setPath("/content.s1.s2.html");
+
+        underTest.handleSelectors(null, builder, Collections.singletonMap("addSelectors", "a.b"));
+        assertEquals("s1.s2.a.b", builder.getSelectorString());
+    }
+
+    @Test
+    public void testHandleSelectorsStringArrayAddSelectors() {
+        final SlingUriBuilder builder = SlingUriBuilder.create().setPath("/content.s1.s2.html");
+
+        final RuntimeObjectModel rom = new AbstractRuntimeObjectModel() {};
+        underTest.handleSelectors(rom, builder, Collections.singletonMap("addSelectors", new String[] {"a","b"}));
+        assertEquals("s1.s2.a.b", builder.getSelectorString());
+    }
+
+    @Test
+    public void testHandleSelectorsStringRemoveSelectors() {
+        final SlingUriBuilder builder = SlingUriBuilder.create().setPath("/content.s1.s2.html");
+
+        underTest.handleSelectors(null, builder, Collections.singletonMap("removeSelectors", "a.b.s1"));
+        assertEquals("s2", builder.getSelectorString());
+    }
+
+    @Test
+    public void testHandleSelectorsStringArrayRemoveSelectors() {
+        final SlingUriBuilder builder = SlingUriBuilder.create().setPath("/content.s1.s2.html");
+
+        final RuntimeObjectModel rom = new AbstractRuntimeObjectModel() {};
+        underTest.handleSelectors(rom, builder, Collections.singletonMap("removeSelectors", new String[] {"a","b","s1"}));
+        assertEquals("s2", builder.getSelectorString());
     }
 }
