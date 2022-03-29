@@ -37,7 +37,7 @@
         The versioning scheme defined here corresponds to SLING-7406 (<module_version>-<htl_specification_version>). Take care when
         releasing to only increase the first part, unless the module provides support for a newer version of the HTL specification.
     -->
-    <version>1.4.17-1.4.0-SNAPSHOT</version>
+    <version>1.4.18-1.4.0</version>
     <name>Apache Sling Scripting HTL Engine</name>
 
     <description>
@@ -49,7 +49,7 @@
         <connection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-scripting-sightly.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-scripting-sightly.git</developerConnection>
         <url>https://gitbox.apache.org/repos/asf?p=sling-org-apache-sling-scripting-sightly.git</url>
-      <tag>HEAD</tag>
+      <tag>org.apache.sling.scripting.sightly-1.4.18-1.4.0</tag>
   </scm>
 
     <properties>
@@ -57,7 +57,7 @@
         <!-- There is significant difference between the locale data provided in JDK8 and starting with JDK9. In order to achieve
         compatibility between newer versions of the JDK and JDK8, we use COMPAT as the default locale data provider for tests. -->
         <java.locale.providers>COMPAT,JRE,SPI</java.locale.providers>
-        <project.build.outputTimestamp>2022-02-01T16:52:59Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2022-03-29T05:50:32Z</project.build.outputTimestamp>
     </properties>
 
     <!-- ======================================================================= -->
