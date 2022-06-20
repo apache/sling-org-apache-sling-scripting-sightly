@@ -46,17 +46,13 @@ public class ScriptUtils {
     private static Resource getResource(@NotNull ResourceResolver resolver, @NotNull Resource resource) {
         String path = resource.getPath();
         if (path.startsWith("/")) {
-            Resource resolved = resolver.resolve(path);
-            if (ResourceUtil.isNonExistingResource(resolved)) {
-                return null;
-            }
-            return resolved;
+            return resolver.getResource(path);
         } else {
             for (String sp : resolver.getSearchPath()) {
                 String absolutePath = ResourceUtil.normalize(sp + path);
                 if (absolutePath != null) {
-                    Resource resolved = resolver.resolve(absolutePath);
-                    if (!ResourceUtil.isNonExistingResource(resolved)) {
+                    Resource resolved = resolver.getResource(absolutePath);
+                    if (resolved != null) {
                         return resolved;
                     }
                 }

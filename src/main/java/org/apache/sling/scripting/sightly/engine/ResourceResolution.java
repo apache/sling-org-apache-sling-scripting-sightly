@@ -183,15 +183,11 @@ public final class ResourceResolution {
 
     private static Resource getScriptResource(@NotNull ResourceResolver resourceResolver, @NotNull String path) {
          if (path.startsWith("/")) {
-             Resource resource = resourceResolver.resolve(path);
-             if (ResourceUtil.isNonExistingResource(resource)) {
-                 return null;
-             }
-             return resource;
+             return resourceResolver.getResource(path);
          } else {
              for (String searchPath : resourceResolver.getSearchPath()) {
-                 Resource resource = resourceResolver.resolve(searchPath + path);
-                 if (!ResourceUtil.isNonExistingResource(resource)) {
+                 Resource resource = resourceResolver.getResource(searchPath + path);
+                 if (resource != null) {
                      return resource;
                  }
              }
