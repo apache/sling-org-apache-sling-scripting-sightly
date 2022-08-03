@@ -121,14 +121,7 @@ public final class ResourceResolution {
         ResourceResolver resolver = base.getResourceResolver();
         for (int iteration = 0; iteration < RECURSION_LIMIT; iteration++) {
             Resource resource = null;
-            if (path.startsWith("/")) {
-                resource = getScriptResource(resolver, path);
-            } else {
-                String normalizedPath = ResourceUtil.normalize(base.getPath() + "/" + path);
-                if (normalizedPath != null) {
-                    resource = getScriptResource(resolver, normalizedPath);
-                }
-            }
+            resource = getScriptResource(resolver, path);
             if (resource != null) {
                 return resource;
             }
@@ -144,10 +137,12 @@ public final class ResourceResolution {
 
     private static Resource locateInSearchPath(ResourceResolver resourceResolver, String path) {
         for (String searchPath : resourceResolver.getSearchPath()) {
-            String fullPath = searchPath + path;
-            Resource resource = resourceResolver.getResource(fullPath);
-            if (resource != null && resource.getPath().startsWith(searchPath)) { //prevent path traversal attack
-                return resource;
+            String fullPath = ResourceUtil.normalize(searchPath + path);
+            if (fullPath != null) {
+                Resource resource = resourceResolver.getResource(fullPath);
+                if (resource != null && resource.getPath().startsWith(searchPath)) { //prevent path traversal attack
+                    return resource;
+                }
             }
         }
         return null;
@@ -186,9 +181,12 @@ public final class ResourceResolution {
              return resourceResolver.getResource(path);
          } else {
              for (String searchPath : resourceResolver.getSearchPath()) {
-                 Resource resource = resourceResolver.getResource(searchPath + path);
-                 if (resource != null) {
-                     return resource;
+                 String resourcePath = ResourceUtil.normalize(searchPath + path);
+                 if (resourcePath != null) {
+                     Resource resource = resourceResolver.getResource(resourcePath);
+                     if (resource != null) {
+                         return resource;
+                     }
                  }
              }
          }
