@@ -121,7 +121,14 @@ public final class ResourceResolution {
         ResourceResolver resolver = base.getResourceResolver();
         for (int iteration = 0; iteration < RECURSION_LIMIT; iteration++) {
             Resource resource = null;
-            resource = getScriptResource(resolver, path);
+            if (path.startsWith("/")) {
+                resource = getScriptResource(resolver, path);
+            } else {
+                String normalizedPath = ResourceUtil.normalize(base.getPath() + "/" + path);
+                if (normalizedPath != null) {
+                    resource = getScriptResource(resolver, normalizedPath);
+                }
+            }
             if (resource != null) {
                 return resource;
             }
