@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.apache.sling.scripting.sightly.render.RenderContext;
@@ -126,6 +127,8 @@ public class XSSRuntimeExtension implements RuntimeExtension {
                 return xssApi.encodeForJSString(text);
             case STYLE_STRING:
                 return xssApi.encodeForCSSString(text);
+            case JSON_STRING:
+                return encodeForJsonString(text);
             case SCRIPT_COMMENT:
             case STYLE_COMMENT:
                 return xssApi.getValidMultiLineComment(text, "");
@@ -135,6 +138,18 @@ public class XSSRuntimeExtension implements RuntimeExtension {
                 return xssApi.filterHTML(text);
         }
         return text; //todo: apply the rest of XSS filters
+    }
+
+    // TODO: move to XssApi
+    /**
+     * Escapes a given text so that it is compliant with the grammar for JSON strings as specified in ECMA-404.
+     * 
+     * @param text the text to escape
+     * @return the escaped text for using it inside a JSON string (excluding the surrounding quotes)
+     * @see <a href="https://www.ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf">ECMA-404: The JSON Data Interchange Syntax</a>
+     */
+    static String encodeForJsonString(String text) {
+        return StringEscapeUtils.escapeJson(text);
     }
 
     private String escapeElementName(String original) {
@@ -249,6 +264,7 @@ public class XSSRuntimeExtension implements RuntimeExtension {
         SCRIPT_STRING("scriptString"),
         SCRIPT_COMMENT("scriptComment"),
         SCRIPT_REGEXP("scriptRegExp"),
+        JSON_STRING("jsonString"),
         STYLE_TOKEN("styleToken"),
         STYLE_STRING("styleString"),
         STYLE_COMMENT("styleComment"),
