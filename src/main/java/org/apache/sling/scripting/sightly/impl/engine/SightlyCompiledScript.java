@@ -24,9 +24,9 @@ import javax.script.Bindings;
 import javax.script.CompiledScript;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
-import javax.script.SimpleBindings;
 
 import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.impl.engine.runtime.RenderContextImpl;
@@ -58,7 +58,7 @@ public class SightlyCompiledScript extends CompiledScript {
             RenderContext renderContext = new RenderContextImpl(scriptEngine.getConfiguration(),
                     scriptEngine.getExtensionRegistryService(), context);
             PrintWriter out = new PrintWriter(context.getWriter());
-            renderUnit.render(out, renderContext, new SimpleBindings());
+            renderUnit.render(out, renderContext, new LazyBindings());
         } finally {
             request.setAttribute(SlingBindings.class.getName(), oldBindings);
         }
