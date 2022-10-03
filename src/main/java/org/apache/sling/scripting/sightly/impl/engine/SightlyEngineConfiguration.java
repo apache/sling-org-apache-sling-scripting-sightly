@@ -73,6 +73,13 @@ public class SightlyEngineConfiguration {
         )
         boolean legacyBooleanCasting() default true;
 
+        @AttributeDefinition(
+                name = "Script Resolution Cache Size",
+                description = "The Script Resolution Cache allows caching script dependencies resolution based on the the script caller, " +
+                        "reducing the number of resource tree lookups. A value lower than 1024 disables the cache."
+        )
+        int scriptResolutionCacheSize() default 0;
+
     }
 
     private String engineVersion = "0";
@@ -80,6 +87,7 @@ public class SightlyEngineConfiguration {
     private String bundleSymbolicName = "org.apache.sling.scripting.sightly";
     private Set<String> allowedExpressionOptions;
     private boolean legacyBooleanCasting;
+    private int scriptResolutionCacheSize = 0;
 
     public static final boolean LEGACY_BOOLEAN_CASTING_DEFAULT = true;
 
@@ -105,6 +113,10 @@ public class SightlyEngineConfiguration {
 
     public boolean legacyBooleanCasting() {
         return legacyBooleanCasting;
+    }
+
+    public int getScriptResolutionCacheSize() {
+        return scriptResolutionCacheSize;
     }
 
     @Activate
@@ -136,5 +148,6 @@ public class SightlyEngineConfiguration {
         keepGenerated = configuration.keepGenerated();
         allowedExpressionOptions = new HashSet<>(Arrays.asList(configuration.allowedExpressionOptions()));
         legacyBooleanCasting = configuration.legacyBooleanCasting();
+        scriptResolutionCacheSize = configuration.scriptResolutionCacheSize();
     }
 }

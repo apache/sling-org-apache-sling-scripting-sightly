@@ -41,7 +41,7 @@ import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngine;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngineFactory;
 import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
-import org.apache.sling.scripting.sightly.impl.utils.ScriptUtils;
+import org.apache.sling.scripting.sightly.impl.utils.ScriptDependencyResolver;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RenderUnit;
 import org.apache.sling.scripting.sightly.use.ProviderOutcome;
@@ -84,7 +84,7 @@ public class RenderUnitProvider implements UseProvider {
     private ScriptEngineManager scriptEngineManager;
 
     @Reference
-    private ScriptingResourceResolverProvider scriptingResourceResolverProvider;
+    private ScriptDependencyResolver scriptDependencyResolver;
 
     @Override
     public ProviderOutcome provide(String identifier, RenderContext renderContext, Bindings arguments) {
@@ -92,8 +92,7 @@ public class RenderUnitProvider implements UseProvider {
             Bindings globalBindings = renderContext.getBindings();
             SlingScriptHelper sling = BindingsUtils.getHelper(globalBindings);
             SlingHttpServletRequest request = BindingsUtils.getRequest(globalBindings);
-            final Resource renderUnitResource = ScriptUtils.resolveScript(scriptingResourceResolverProvider
-                    .getRequestScopedResourceResolver(), renderContext, identifier);
+            final Resource renderUnitResource = scriptDependencyResolver.resolveScript(renderContext, identifier);
             if (renderUnitResource == null) {
                 // attempt to find a bundled render unit that does not expose a servlet resource via the search paths
                 RenderUnit renderUnit = bundledUnitManager.getRenderUnit(globalBindings, identifier);
