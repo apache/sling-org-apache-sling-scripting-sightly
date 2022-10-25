@@ -63,7 +63,7 @@ import org.apache.sling.scripting.sightly.impl.engine.SightlyEngineConfiguration
 import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngine;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.impl.utils.Patterns;
-import org.apache.sling.scripting.sightly.impl.utils.ScriptUtils;
+import org.apache.sling.scripting.sightly.impl.utils.ScriptDependencyResolver;
 import org.apache.sling.scripting.sightly.java.compiler.GlobalShadowCheckBackendCompiler;
 import org.apache.sling.scripting.sightly.java.compiler.JavaClassBackendCompiler;
 import org.apache.sling.scripting.sightly.render.RenderContext;
@@ -105,6 +105,9 @@ public class SlingHTLMasterCompiler {
 
     @Reference
     private ScriptCache scriptCache;
+
+    @Reference
+    private ScriptDependencyResolver scriptDependencyResolver;
 
     private static final String NO_SCRIPT = "NO_SCRIPT";
     private static final String JAVA_EXTENSION = ".java";
@@ -181,11 +184,7 @@ public class SlingHTLMasterCompiler {
                     return getUseObjectAndRecompileIfNeeded(pojoResource);
                 }
             } else {
-                Resource pojoResource = ScriptUtils.resolveScript(
-                        scriptingResourceResolverProvider.getRequestScopedResourceResolver(),
-                        renderContext,
-                        className + JAVA_EXTENSION
-                );
+                Resource pojoResource = scriptDependencyResolver.resolveScript(renderContext, className + JAVA_EXTENSION);
                 if (pojoResource != null) {
                     return getUseObjectAndRecompileIfNeeded(pojoResource);
                 }
@@ -293,7 +292,7 @@ public class SlingHTLMasterCompiler {
                 pathElements.append("/");
             }
         }
-        return resolver.getResource(pathElements.toString() + JAVA_EXTENSION);
+        return resolver.getResource(pathElements + JAVA_EXTENSION);
     }
 
     /**

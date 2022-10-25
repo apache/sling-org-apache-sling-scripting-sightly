@@ -25,7 +25,7 @@
     <parent>
         <groupId>org.apache.sling</groupId>
         <artifactId>sling-bundle-parent</artifactId>
-        <version>38</version>
+        <version>46</version>
         <relativePath />
     </parent>
 
@@ -37,7 +37,7 @@
         The versioning scheme defined here corresponds to SLING-7406 (<module_version>-<htl_specification_version>). Take care when
         releasing to only increase the first part, unless the module provides support for a newer version of the HTL specification.
     -->
-    <version>1.4.9-1.4.0-SNAPSHOT</version>
+    <version>1.4.21-1.4.0-SNAPSHOT</version>
     <name>Apache Sling Scripting HTL Engine</name>
 
     <description>
@@ -57,6 +57,7 @@
         <!-- There is significant difference between the locale data provided in JDK8 and starting with JDK9. In order to achieve
         compatibility between newer versions of the JDK and JDK8, we use COMPAT as the default locale data provider for tests. -->
         <java.locale.providers>COMPAT,JRE,SPI</java.locale.providers>
+        <project.build.outputTimestamp>2022-08-08T13:24:09Z</project.build.outputTimestamp>
     </properties>
 
     <!-- ======================================================================= -->
@@ -64,6 +65,11 @@
     <!-- ======================================================================= -->
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.10.1</version>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -101,6 +107,41 @@
                 </configuration>
             </plugin>
         </plugins>
+        <pluginManagement>
+            <plugins>
+                <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>
+                                            com.github.spotbugs
+                                        </groupId>
+                                        <artifactId>
+                                            spotbugs-maven-plugin
+                                        </artifactId>
+                                        <versionRange>
+                                            [3.1.11,)
+                                        </versionRange>
+                                        <goals>
+                                            <goal>check</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore />
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 
     <!-- ======================================================================= -->
@@ -111,7 +152,7 @@
         <dependency>
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.scripting.sightly.runtime</artifactId>
-            <version>1.2.4-1.4.0</version>
+            <version>1.2.6-1.4.0</version>
             <scope>provided</scope>
         </dependency>
 
@@ -183,7 +224,7 @@
         <dependency>
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.api</artifactId>
-            <version>2.21.0</version>
+            <version>2.25.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -274,7 +315,6 @@
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>16.0.2</version>
             <scope>provided</scope>
         </dependency>
 
@@ -319,7 +359,10 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <argLine>@{argLine} -Djava.locale.providers=${java.locale.providers}</argLine>
+                            <!-- SLING-10766 this argLine replaces the value from the parent pom so we need
+                                 make sure to use a late-binding copy of the jacoco.command defined elsewhere
+                                 before appending the extra system property to it. -->
+                            <argLine>@{jacoco.command} -Djava.locale.providers=${java.locale.providers}</argLine>
                         </configuration>
                     </plugin>
                 </plugins>

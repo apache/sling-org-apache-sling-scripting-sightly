@@ -5,6 +5,7 @@
 .project
 .settings
 .externalToolBuilders
+.vscode
 maven-eclipse.xml
 *.swp
 *.iml

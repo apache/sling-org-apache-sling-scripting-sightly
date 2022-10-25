@@ -36,12 +36,11 @@ import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.api.scripting.SlingScript;
 import org.apache.sling.scripting.api.CachedScript;
 import org.apache.sling.scripting.api.ScriptCache;
-import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngineFactory;
 import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
-import org.apache.sling.scripting.sightly.impl.utils.ScriptUtils;
+import org.apache.sling.scripting.sightly.impl.utils.ScriptDependencyResolver;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.use.ProviderOutcome;
 import org.apache.sling.scripting.sightly.use.UseProvider;
@@ -83,9 +82,6 @@ public class ScriptUseProvider implements UseProvider {
     private static final Logger log = LoggerFactory.getLogger(ScriptUseProvider.class);
 
     @Reference
-    private ScriptingResourceResolverProvider scriptingResourceResolverProvider;
-
-    @Reference
     private BundledUnitManagerImpl bundledUnitManager;
 
     @Reference
@@ -93,6 +89,9 @@ public class ScriptUseProvider implements UseProvider {
 
     @Reference
     private ScriptCache scriptCache;
+
+    @Reference
+    protected ScriptDependencyResolver scriptDependencyResolver;
 
     @Override
     public ProviderOutcome provide(String scriptName, RenderContext renderContext, Bindings arguments) {
@@ -135,8 +134,7 @@ public class ScriptUseProvider implements UseProvider {
                 return ProviderOutcome.failure(e);
             }
         }
-        Resource scriptResource = ScriptUtils.resolveScript(scriptingResourceResolverProvider.getRequestScopedResourceResolver(),
-                renderContext, scriptName);
+        Resource scriptResource = scriptDependencyResolver.resolveScript(renderContext, scriptName);
         if (scriptResource == null) {
             log.debug("Path does not match an existing resource: {}", scriptName);
             return ProviderOutcome.failure();

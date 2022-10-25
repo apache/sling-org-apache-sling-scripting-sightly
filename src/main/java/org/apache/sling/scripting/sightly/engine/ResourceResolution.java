@@ -144,10 +144,12 @@ public final class ResourceResolution {
 
     private static Resource locateInSearchPath(ResourceResolver resourceResolver, String path) {
         for (String searchPath : resourceResolver.getSearchPath()) {
-            String fullPath = searchPath + path;
-            Resource resource = resourceResolver.getResource(fullPath);
-            if (resource != null && resource.getPath().startsWith(searchPath)) { //prevent path traversal attack
-                return resource;
+            String fullPath = ResourceUtil.normalize(searchPath + path);
+            if (fullPath != null) {
+                Resource resource = resourceResolver.getResource(fullPath);
+                if (resource != null && resource.getPath().startsWith(searchPath)) { //prevent path traversal attack
+                    return resource;
+                }
             }
         }
         return null;
@@ -183,16 +185,15 @@ public final class ResourceResolution {
 
     private static Resource getScriptResource(@NotNull ResourceResolver resourceResolver, @NotNull String path) {
          if (path.startsWith("/")) {
-             Resource resource = resourceResolver.resolve(path);
-             if (ResourceUtil.isNonExistingResource(resource)) {
-                 return null;
-             }
-             return resource;
+             return resourceResolver.getResource(path);
          } else {
              for (String searchPath : resourceResolver.getSearchPath()) {
-                 Resource resource = resourceResolver.resolve(searchPath + path);
-                 if (!ResourceUtil.isNonExistingResource(resource)) {
-                     return resource;
+                 String resourcePath = ResourceUtil.normalize(searchPath + path);
+                 if (resourcePath != null) {
+                     Resource resource = resourceResolver.getResource(resourcePath);
+                     if (resource != null) {
+                         return resource;
+                     }
                  }
              }
          }
