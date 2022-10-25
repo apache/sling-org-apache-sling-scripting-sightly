@@ -20,6 +20,7 @@ package org.apache.sling.scripting.sightly.impl.engine.extension;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -60,6 +61,23 @@ public class FormatFilterExtensionTest {
     private final Date testDate = Date.from(LocalDateTime.of(1918, 12, 1, 0, 0, 0, 0)
         .atZone(ZoneId.of("UTC"))
         .toInstant());
+
+    @Test
+    public void testNoop() {
+        // constructed case, it is actually difficult to find a pattern that is not a date-time or decimal number format
+        assertEquals("0-#",
+            subject.call(renderContext, "0-#", Collections.singletonMap(FormatFilterExtension.FORMAT, "ignored")));
+    }
+
+    @Test
+    public void testNoopNoParameters() {
+        assertNull("0-#", subject.call(renderContext, "0-#", Collections.emptyMap()));
+    }
+
+    @Test(expected = SightlyException.class)
+    public void testMissingOptions() {
+        subject.call(renderContext, "fails");
+    }
 
     @Test
     public void testDateFormatNull() {
@@ -186,5 +204,57 @@ public class FormatFilterExtensionTest {
             options.put(FormatFilterExtension.LOCALE_OPTION, locale);
         }
         assertEquals(expected, subject.call(renderContext, format, options));
+    }
+
+    @Test
+    public void testSimpleStringFormat() {
+        Object result = subject.call(renderContext,
+            "This {0} a {1} format", Collections.singletonMap("format", Arrays.asList("is", "simple")));
+        assertEquals("This is a simple format", result);
+    }
+
+    @Test
+    public void testStringFormat() {
+        Object result = subject.call(renderContext,
+            "This {0} a {1} format", new HashMap<String, Object>() {{
+                put(FormatFilterExtension.FORMAT, Arrays.asList("is", "simple"));
+                put(FormatFilterExtension.TYPE_OPTION, FormatFilterExtension.STRING_FORMAT_TYPE);
+            }});
+        assertEquals("This is a simple format", result);
+    }
+
+    @Test
+    public void testSimpleStringFormatWithSingleParameter() {
+        Object result = subject.call(renderContext,
+            "Hello {0}", Collections.singletonMap(FormatFilterExtension.FORMAT, "world"));
+        assertEquals("Hello world", result);
+    }
+
+    @Test
+    public void testComplexStringFormatNoSimplePlaceholderWithLocale() {
+        Object result = subject.call(renderContext,
+            "This query has {0,plural,zero {# results} one {# result} other {# results}}",
+            new HashMap<String, Object>() {{
+                put(FormatFilterExtension.FORMAT, Collections.singletonList(7));
+                put(FormatFilterExtension.LOCALE_OPTION, "en_US");
+            }});
+        assertEquals("This query has 7 results", result);
+    }
+
+    @Test
+    public void testComplexStringFormatWithSimplePlaceholderNoLocale() {
+        Object result = subject.call(renderContext,
+            "This {0} has {1,plural,zero {# results} one {# result} other {# results}}",
+            Collections.singletonMap(FormatFilterExtension.FORMAT, Arrays.asList("query", 7)));
+        assertEquals("This query has 7 results", result);
+    }
+
+    @Test
+    public void testComplexStringFormatWithSimplePlaceholderNoIcuSupport() {
+        subject.hasIcuSupport = false;
+        Object result = subject.call(renderContext,
+            "This {0} has {1,plural,zero {{1} results} one {{1} result} other {{1} results}}",
+            Collections.singletonMap(FormatFilterExtension.FORMAT, Arrays.asList("query", 7)));
+        assertNull(result);
     }
 }

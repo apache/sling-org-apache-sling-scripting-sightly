@@ -41,6 +41,8 @@ import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ibm.icu.text.MessageFormat;
+
 @Component(
         service = RuntimeExtension.class,
         property = {
@@ -60,6 +62,9 @@ public class FormatFilterExtension implements RuntimeExtension {
 
     private static final Logger LOG = LoggerFactory.getLogger(FormatFilterExtension.class);
     private static final Pattern PLACEHOLDER_REGEX = Pattern.compile("\\{\\d+}");
+    private static final Pattern COMPLEX_PLACEHOLDER_REGEX = Pattern.compile("\\{\\d+,[^}]+}");
+
+    protected boolean hasIcuSupport = true;
 
     @Override
     public Object call(final RenderContext renderContext, Object... arguments) {
@@ -70,18 +75,17 @@ public class FormatFilterExtension implements RuntimeExtension {
 
         String formattingType = runtimeObjectModel.toString(options.get(TYPE_OPTION));
         Object formatObject = options.get(FORMAT_OPTION);
-        boolean hasPlaceHolders = PLACEHOLDER_REGEX.matcher(source).find();
+        boolean hasPlaceHolders = PLACEHOLDER_REGEX.matcher(source).find() || COMPLEX_PLACEHOLDER_REGEX.matcher(source).find();
         if (STRING_FORMAT_TYPE.equals(formattingType)) {
-            return getFormattedString(runtimeObjectModel, source, formatObject);
+            return getFormattedString(runtimeObjectModel, source, options, formatObject);
         } else if (DATE_FORMAT_TYPE.equals(formattingType) || (!hasPlaceHolders && runtimeObjectModel.isDate(formatObject))) {
             return getDateFormattedString(runtimeObjectModel, source, options, formatObject);
         } else if (NUMBER_FORMAT_TYPE.equals(formattingType) || (!hasPlaceHolders && runtimeObjectModel.isNumber(formatObject))) {
             return getNumberFormattedString(runtimeObjectModel, source, options, formatObject);
         }
         if (hasPlaceHolders) {
-            return getFormattedString(runtimeObjectModel, source, formatObject);
+            return getFormattedString(runtimeObjectModel, source, options, formatObject);
         }
-
         try {
             // try to parse as DateTimeFormatter
             DateTimeFormatter.ofPattern(source);
@@ -96,12 +100,22 @@ public class FormatFilterExtension implements RuntimeExtension {
         } catch (IllegalArgumentException e) {
             // ignore
         }
-        return getFormattedString(runtimeObjectModel, source, formatObject);
+        return getFormattedString(runtimeObjectModel, source, options, formatObject);
     }
 
-    private Object getFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Object formatObject) {
+    private Object getFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options,
+                                      Object formatObject) {
         Object[] params = decodeParams(runtimeObjectModel, formatObject);
-        return formatString(runtimeObjectModel, source, params);
+        if (COMPLEX_PLACEHOLDER_REGEX.matcher(source).find()) {
+            if (hasIcuSupport) {
+                Locale locale = getLocale(runtimeObjectModel, options);
+                return formatStringIcu(source, locale, params);
+            } else {
+                return null;
+            }
+        } else {
+            return formatString(runtimeObjectModel, source, params);
+        }
     }
 
     private String getNumberFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options,
@@ -157,25 +171,33 @@ public class FormatFilterExtension implements RuntimeExtension {
         Matcher matcher = PLACEHOLDER_REGEX.matcher(source);
         StringBuilder builder = new StringBuilder();
         int lastPos = 0;
-        boolean matched = true;
-        while (matched) {
-            matched = matcher.find();
-            if (matched) {
-                String group = matcher.group();
-                int paramIndex = Integer.parseInt(group.substring(1, group.length() - 1));
-                String replacement = toString(runtimeObjectModel, params, paramIndex);
-                int matchStart = matcher.start();
-                int matchEnd = matcher.end();
-                builder.append(source, lastPos, matchStart).append(replacement);
-                lastPos = matchEnd;
-            }
+        while (matcher.find()) {
+            String group = matcher.group();
+            int paramIndex = Integer.parseInt(group.substring(1, group.length() - 1));
+            String replacement = toString(runtimeObjectModel, params, paramIndex);
+            int matchStart = matcher.start();
+            int matchEnd = matcher.end();
+            builder.append(source, lastPos, matchStart).append(replacement);
+            lastPos = matchEnd;
         }
         builder.append(source, lastPos, source.length());
         return builder.toString();
     }
 
+    private String formatStringIcu(String source, Locale locale, Object[] params) {
+        try {
+            MessageFormat messageFormat = locale != null ? new MessageFormat(source, locale) : new MessageFormat(source);
+            return messageFormat.format(params);
+        } catch (NoClassDefFoundError ex) {
+            LOG.trace("ICU4J not found", ex);
+            hasIcuSupport = false;
+            return null;
+        }
+    }
+
     private String toString(RuntimeObjectModel runtimeObjectModel, Object[] params, int index) {
-        if (index >= 0 && index < params.length) {
+        // index can only be a signed integer according to FormatFilterExtension#PLACEHOLDER_REGEX
+        if (index < params.length) {
             return runtimeObjectModel.toString(params[index]);
         }
         return "";
