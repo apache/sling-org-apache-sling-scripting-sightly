@@ -184,6 +184,11 @@
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.resource</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
             <artifactId>org.osgi.service.cm</artifactId>
             <scope>provided</scope>
         </dependency>
@@ -345,11 +350,6 @@
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.testing.sling-mock.junit4</artifactId>
             <version>2.5.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.resource</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
