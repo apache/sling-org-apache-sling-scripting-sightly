@@ -347,6 +347,11 @@
             <version>2.5.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.resource</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>
