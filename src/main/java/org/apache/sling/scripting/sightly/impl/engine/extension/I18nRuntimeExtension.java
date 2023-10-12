@@ -31,10 +31,13 @@ import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.i18n.ResourceBundleProvider;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
+import org.apache.sling.scripting.sightly.engine.extension.i18n.I18nBasenameProvider;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.render.RuntimeObjectModel;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +51,9 @@ public class I18nRuntimeExtension implements RuntimeExtension {
 
     private static final Logger LOG = LoggerFactory.getLogger(I18nRuntimeExtension.class);
 
+    @Reference(cardinality = ReferenceCardinality.OPTIONAL)
+    private I18nBasenameProvider i18nBasenameProvider;
+
     @Override
     public Object call(final RenderContext renderContext, Object... arguments) {
         ExtensionUtils.checkArgumentCount(RuntimeExtension.I18N, arguments, 2);
@@ -56,9 +62,18 @@ public class I18nRuntimeExtension implements RuntimeExtension {
         Map<String, Object> options = (Map<String, Object>) arguments[1];
         String locale = runtimeObjectModel.toString(options.get("locale"));
         String hint = runtimeObjectModel.toString(options.get("hint"));
-        String basename = runtimeObjectModel.toString(options.get("basename"));
+        String basename = getBasename(renderContext, options);
         final Bindings bindings = renderContext.getBindings();
         return get(bindings, text, locale, basename, hint);
+    }
+
+    private String getBasename(RenderContext renderContext, Map<String, Object> options) {
+        RuntimeObjectModel runtimeObjectModel = renderContext.getObjectModel();
+        String basename = runtimeObjectModel.toString(options.get("basename"));
+        if (StringUtils.isEmpty(basename) && i18nBasenameProvider != null) {
+            return i18nBasenameProvider.getBasename(renderContext);
+        }
+        return basename;
     }
 
     private String get(final Bindings bindings, String text, String locale, String basename, String hint) {
