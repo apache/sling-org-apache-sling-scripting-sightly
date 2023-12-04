@@ -18,23 +18,28 @@
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 package org.apache.sling.scripting.sightly.impl.engine;
 
-import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.jetbrains.annotations.NotNull;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
+import org.osgi.util.converter.Converters;
 
 class RuntimeExtensionReference implements Comparable<RuntimeExtensionReference> {
     private final int priority;
     private final String name;
-    private ServiceReference<RuntimeExtension> serviceReference;
-    private RuntimeExtension runtimeExtension;
+    private final ServiceReference<RuntimeExtension> serviceReference;
+    private final RuntimeExtension runtimeExtension;
 
     RuntimeExtensionReference(ServiceReference<RuntimeExtension> serviceReference, RuntimeExtension runtimeExtension) {
         this.serviceReference = serviceReference;
         this.runtimeExtension = runtimeExtension;
-        priority = PropertiesUtil.toInteger(serviceReference.getProperty(Constants.SERVICE_RANKING), 0);
-        name = PropertiesUtil.toString(serviceReference.getProperty(RuntimeExtension.NAME), "");
+        final Object ranking = serviceReference.getProperty(Constants.SERVICE_RANKING);
+        if ( ranking instanceof Integer ) {
+            this.priority = (Integer)ranking;
+        } else {
+            this.priority = 0;
+        }
+        this.name = Converters.standardConverter().convert(serviceReference.getProperty(RuntimeExtension.NAME)).defaultValue("").to(String.class);
     }
 
     @Override

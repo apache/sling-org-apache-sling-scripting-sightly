@@ -24,13 +24,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.util.converter.Converters;
 
 /**
  * Aggregator for all runtime extensions.
@@ -64,7 +64,7 @@ public class ExtensionRegistryService {
     @SuppressWarnings("unused")
     protected void unbindExtensionService(ServiceReference<RuntimeExtension> serviceReference) {
         synchronized (extensions) {
-            String name = PropertiesUtil.toString(serviceReference.getProperty(RuntimeExtension.NAME), "");
+            String name = Converters.standardConverter().convert(serviceReference.getProperty(RuntimeExtension.NAME)).defaultValue("").to(String.class);
             Set<RuntimeExtensionReference> namedExtensions = extensions.get(name);
             boolean changed = false;
             if (namedExtensions != null) {
