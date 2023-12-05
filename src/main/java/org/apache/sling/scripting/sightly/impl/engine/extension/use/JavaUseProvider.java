@@ -80,8 +80,8 @@ public class JavaUseProvider implements UseProvider {
     @Reference
     private BundledUnitManagerImpl bundledUnitManager;
 
-    @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY)
-    private ModelFactory modelFactory;
+    @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY, service = ModelFactory.class)
+    private Object modelFactory;
 
     @Override
     public ProviderOutcome provide(String identifier, RenderContext renderContext, Bindings arguments) {
@@ -169,23 +169,23 @@ public class JavaUseProvider implements UseProvider {
             SlingHttpServletRequest request = BindingsUtils.getRequest(globalBindings);
             Resource resource = BindingsUtils.getResource(globalBindings);
             // Sling Model
-            if (modelFactory != null && modelFactory.isModelClass(cls)) {
+            if (modelFactory != null && ((ModelFactory) modelFactory).isModelClass(cls)) {
                 try {
                     // Attempt to instantiate via sling models
                     // first, try to use the provided adaptable
-                    if (adaptable != null && modelFactory.canCreateFromAdaptable(adaptable, cls)) {
+                    if (adaptable != null && ((ModelFactory) modelFactory).canCreateFromAdaptable(adaptable, cls)) {
                         LOG.debug("Trying to instantiate class {} as Sling Model from provided adaptable.", cls);
-                        return ProviderOutcome.notNullOrFailure(modelFactory.createModel(adaptable, cls));
+                        return ProviderOutcome.notNullOrFailure(((ModelFactory) modelFactory).createModel(adaptable, cls));
                     }
                     // then, try to use the request
-                    if (request != null && modelFactory.canCreateFromAdaptable(request, cls)) {
+                    if (request != null && ((ModelFactory) modelFactory).canCreateFromAdaptable(request, cls)) {
                         LOG.debug("Trying to instantiate class {} as Sling Model from request.", cls);
-                        return ProviderOutcome.notNullOrFailure(modelFactory.createModel(request, cls));
+                        return ProviderOutcome.notNullOrFailure(((ModelFactory) modelFactory).createModel(request, cls));
                     }
                     // finally, try to use the resource
-                    if (resource != null && modelFactory.canCreateFromAdaptable(resource, cls)) {
+                    if (resource != null && ((ModelFactory) modelFactory).canCreateFromAdaptable(resource, cls)) {
                         LOG.debug("Trying to instantiate class {} as Sling Model from resource.", cls);
-                        return ProviderOutcome.notNullOrFailure(modelFactory.createModel(resource, cls));
+                        return ProviderOutcome.notNullOrFailure(((ModelFactory) modelFactory).createModel(resource, cls));
                     }
                     return ProviderOutcome.failure(
                             new IllegalStateException("Could not adapt the given Sling Model from neither request nor resource: " + cls));
