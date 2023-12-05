@@ -61,12 +61,17 @@ public class I18nRuntimeExtension implements RuntimeExtension {
         return get(bindings, text, locale, basename, hint);
     }
 
+    private volatile boolean logged;
+
     private Object getResourceBundleProvider(SlingScriptHelper slingScriptHelper) {
         Class clazz;
         try {
             clazz = getClass().getClassLoader().loadClass("org.apache.sling.i18n.ResourceBundleProvider");
         } catch (Throwable t) {
-            LOG.warn("i18n package not available");
+            if (!logged) {
+                LOG.warn("i18n package not available");
+                logged = true;
+            }
             return null;
         }
         return slingScriptHelper.getService(clazz);
