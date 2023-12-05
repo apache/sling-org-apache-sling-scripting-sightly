@@ -61,11 +61,27 @@ public class I18nRuntimeExtension implements RuntimeExtension {
         return get(bindings, text, locale, basename, hint);
     }
 
+    private volatile boolean logged;
+
+    private Object getResourceBundleProvider(SlingScriptHelper slingScriptHelper) {
+        Class clazz;
+        try {
+            clazz = getClass().getClassLoader().loadClass("org.apache.sling.i18n.ResourceBundleProvider");
+        } catch (Throwable t) {
+            if (!logged) {
+                LOG.warn("i18n package not available");
+                logged = true;
+            }
+            return null;
+        }
+        return slingScriptHelper.getService(clazz);
+    }
+
     private String get(final Bindings bindings, String text, String locale, String basename, String hint) {
 
         final SlingScriptHelper slingScriptHelper = BindingsUtils.getHelper(bindings);
         final SlingHttpServletRequest request = BindingsUtils.getRequest(bindings);
-        final ResourceBundleProvider resourceBundleProvider = slingScriptHelper.getService(ResourceBundleProvider.class);
+        final Object resourceBundleProvider = getResourceBundleProvider(slingScriptHelper);
         if (resourceBundleProvider != null) {
             String key = text;
             if (StringUtils.isNotEmpty(hint)) {
@@ -99,12 +115,12 @@ public class I18nRuntimeExtension implements RuntimeExtension {
         return text;
     }
 
-    private String getTranslation(ResourceBundleProvider resourceBundleProvider, String basename, String key, Locale locale) {
+    private String getTranslation(Object resourceBundleProvider, String basename, String key, Locale locale) {
         ResourceBundle resourceBundle;
         if (StringUtils.isNotEmpty(basename)) {
-            resourceBundle = resourceBundleProvider.getResourceBundle(basename, locale);
+            resourceBundle = ((ResourceBundleProvider) resourceBundleProvider).getResourceBundle(basename, locale);
         } else {
-            resourceBundle = resourceBundleProvider.getResourceBundle(locale);
+            resourceBundle = ((ResourceBundleProvider) resourceBundleProvider).getResourceBundle(locale);
         }
         if (resourceBundle != null && resourceBundle.containsKey(key)) {
             return resourceBundle.getString(key);
