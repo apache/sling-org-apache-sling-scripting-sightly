@@ -42,6 +42,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.commons.classloader.ClassLoaderWriter;
 import org.apache.sling.commons.classloader.DynamicClassLoaderManager;
@@ -108,6 +109,9 @@ public class SlingHTLMasterCompiler {
 
     @Reference
     private ScriptDependencyResolver scriptDependencyResolver;
+
+    @Reference
+    private ResourceResolverFactory resourceResolverFactory;
 
     private static final String NO_SCRIPT = "NO_SCRIPT";
     private static final String JAVA_EXTENSION = ".java";
@@ -225,7 +229,7 @@ public class SlingHTLMasterCompiler {
                 }
             };
             GlobalShadowCheckBackendCompiler shadowCheckBackendCompiler = null;
-            SlingJavaImportsAnalyser importsAnalyser = new SlingJavaImportsAnalyser(scriptingResourceResolverProvider);
+            SlingJavaImportsAnalyser importsAnalyser = new SlingJavaImportsAnalyser(resourceResolverFactory);
             JavaClassBackendCompiler javaClassBackendCompiler = new JavaClassBackendCompiler(importsAnalyser);
             if (scriptContext != null) {
                 Bindings bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);

@@ -27,7 +27,6 @@ import java.util.Optional;
 import org.apache.sling.api.adapter.Adaptable;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyEngineConfiguration;
-import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngineFactory;
 import org.apache.sling.scripting.sightly.render.AbstractRuntimeObjectModel;
 
 public class SlingRuntimeObjectModel extends AbstractRuntimeObjectModel {

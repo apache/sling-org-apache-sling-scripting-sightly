@@ -31,12 +31,12 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.api.resource.ResourceUtil;
 import org.apache.sling.api.resource.type.ResourceType;
 import org.apache.sling.commons.compiler.source.JavaEscapeHelper;
 import org.apache.sling.scripting.api.CachedScript;
 import org.apache.sling.scripting.api.ScriptCache;
-import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.engine.BundledUnitManager;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyCompiledScript;
@@ -50,8 +50,6 @@ import org.jetbrains.annotations.Nullable;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This service allows various components to work with {@link
@@ -61,8 +59,6 @@ import org.slf4j.LoggerFactory;
 @Component(service = {BundledUnitManagerImpl.class, BundledUnitManager.class})
 public class BundledUnitManagerImpl implements BundledUnitManager {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(BundledUnitManagerImpl.class);
-
     @Reference
     private ScriptEngineManager scriptEngineManager;
 
@@ -70,7 +66,7 @@ public class BundledUnitManagerImpl implements BundledUnitManager {
     private ScriptCache scriptCache;
 
     @Reference
-    private ScriptingResourceResolverProvider scriptingResourceResolverProvider;
+    private ResourceResolverFactory resourceResolverFactory;
 
 
     /**
@@ -113,7 +109,7 @@ public class BundledUnitManagerImpl implements BundledUnitManager {
         BundledRenderUnit bundledRenderUnit = getBundledRenderUnit(bindings);
         Resource currentResource = BindingsUtils.getResource(bindings);
         Set<String> defaultLocations = new LinkedHashSet<>();
-        for (String searchPath : scriptingResourceResolverProvider.getRequestScopedResourceResolver().getSearchPath()) {
+        for (String searchPath : resourceResolverFactory.getSearchPath()) {
             if (identifier.startsWith("/")) {
                 defaultLocations.add(identifier);
                 if (identifier.startsWith(searchPath)) {

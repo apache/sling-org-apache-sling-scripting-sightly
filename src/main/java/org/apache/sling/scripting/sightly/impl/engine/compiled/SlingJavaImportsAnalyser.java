@@ -18,7 +18,7 @@
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 package org.apache.sling.scripting.sightly.impl.engine.compiled;
 
-import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
+import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.scripting.sightly.java.compiler.JavaEscapeUtils;
 import org.apache.sling.scripting.sightly.java.compiler.JavaImportsAnalyzer;
 
@@ -28,16 +28,16 @@ import org.apache.sling.scripting.sightly.java.compiler.JavaImportsAnalyzer;
  */
 class SlingJavaImportsAnalyser implements JavaImportsAnalyzer {
 
-    private ScriptingResourceResolverProvider scriptingResourceResolverProvider;
+    private ResourceResolverFactory factory;
 
-    public SlingJavaImportsAnalyser(ScriptingResourceResolverProvider scriptingResourceResolverProvider) {
-        this.scriptingResourceResolverProvider = scriptingResourceResolverProvider;
+    public SlingJavaImportsAnalyser(final ResourceResolverFactory factory) {
+        this.factory = factory;
     }
 
     @Override
-    public boolean allowImport(String importedClass) {
-        for (String searchPath : scriptingResourceResolverProvider.getRequestScopedResourceResolver().getSearchPath()) {
-            String subPackage = JavaEscapeUtils.makeJavaPackage(searchPath);
+    public boolean allowImport(final String importedClass) {
+        for (final String searchPath : this.factory.getSearchPath()) {
+            final String subPackage = JavaEscapeUtils.makeJavaPackage(searchPath);
             if (importedClass.startsWith(subPackage)) {
                 return false;
             }
