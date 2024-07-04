@@ -132,11 +132,14 @@ public class ScriptDependencyResolver implements ResourceChangeListener, Externa
                 readLock.unlock();
                 writeLock.lock();
                 try {
-                    result = internalResolveScript(request, renderContext, scriptIdentifier);
-                    if (result != null) {
-                       resolutionCache.put(cacheKey, result.getPath());
-                    } else {
-                        resolutionCache.put(cacheKey, NOT_FOUND_MARKER);
+                    // recheck state in case another writer thread acquired the lock before this one
+                    if (!resolutionCache.containsKey(cacheKey)) {
+                        result = internalResolveScript(request, renderContext, scriptIdentifier);
+                        if (result != null) {
+                            resolutionCache.put(cacheKey, result.getPath());
+                        } else {
+                            resolutionCache.put(cacheKey, NOT_FOUND_MARKER);
+                        }
                     }
                     readLock.lock();
                 } finally {
