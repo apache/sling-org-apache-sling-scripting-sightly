@@ -17,18 +17,18 @@
 package org.apache.sling.scripting.sightly.impl.utils;
 
 import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
-import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
-import org.apache.sling.api.resource.ResourceUtil;
 import org.apache.sling.api.resource.observation.ExternalResourceChangeListener;
 import org.apache.sling.api.resource.observation.ResourceChange;
 import org.apache.sling.api.resource.observation.ResourceChangeListener;
@@ -38,17 +38,19 @@ import org.apache.sling.scripting.sightly.engine.ResourceResolution;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyEngineConfiguration;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleListener;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 @Component(
         service = {
                 ScriptDependencyResolver.class,
-                ResourceChangeListener.class,
         },
         property = {
                 // listen to changes to all search paths
@@ -74,45 +76,70 @@ public class ScriptDependencyResolver implements ResourceChangeListener, Externa
     private ResourceResolverFactory resourceResolverFactory;
 
     private Map<String, String> resolutionCache = new Cache(0);
-    private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock(true);
     private final Lock readLock = rwl.readLock();
     private final Lock writeLock = rwl.writeLock();
 
+    private ServiceRegistration<ResourceChangeListener> resourceChangeListenerServiceRegistration;
+
+    private boolean cacheEnabled = false;
+
+    private static final String NOT_FOUND_MARKER = "#NOT_FOUND#";
+
+    @SuppressWarnings("squid:S1149")
     @Activate
     private void activate(ComponentContext componentContext) {
         int cacheSize = sightlyEngineConfiguration.getScriptResolutionCacheSize();
         if (cacheSize < 1024) {
+            cacheEnabled = false;
             resolutionCache = new Cache(0);
         } else {
+            cacheEnabled = true;
             resolutionCache = new Cache(cacheSize);
         }
-        componentContext.getBundleContext().addBundleListener(this);
+        if (cacheEnabled) {
+            componentContext.getBundleContext().addBundleListener(this);
+            Dictionary<String, Object> resourceChangeListenerProperties = new Hashtable<>();
+            resourceChangeListenerProperties.put(ResourceChangeListener.PATHS, ".");
+            resourceChangeListenerProperties.put(ResourceChangeListener.CHANGES, new String[] {
+                    ResourceChangeListener.CHANGE_ADDED,
+                    ResourceChangeListener.CHANGE_CHANGED,
+                    ResourceChangeListener.CHANGE_REMOVED
+            });
+            resourceChangeListenerServiceRegistration =
+                    componentContext.getBundleContext().registerService(ResourceChangeListener.class, this, resourceChangeListenerProperties);
+        }
+    }
+
+    @Deactivate
+    private void deactivate(ComponentContext componentContext) {
+        if (resourceChangeListenerServiceRegistration != null) {
+            resourceChangeListenerServiceRegistration.unregister();
+        }
+        componentContext.getBundleContext().removeBundleListener(this);
     }
 
     public Resource resolveScript(RenderContext renderContext, String scriptIdentifier) {
+        SlingHttpServletRequest request = BindingsUtils.getRequest(renderContext.getBindings());
+        if (!cacheEnabled) {
+            return internalResolveScript(request, renderContext, scriptIdentifier);
+        }
         readLock.lock();
         try {
-            SlingHttpServletRequest request = BindingsUtils.getRequest(renderContext.getBindings());
             String cacheKey = request.getResource().getResourceType() + ":" + scriptIdentifier;
             Resource result = null;
             if (!resolutionCache.containsKey(cacheKey)) {
                 readLock.unlock();
                 writeLock.lock();
                 try {
-                    Resource caller =
-                            ResourceResolution.getResourceForRequest(scriptingResourceResolverProvider.getRequestScopedResourceResolver(),
-                                    request);
-                    result = ResourceResolution.getResourceFromSearchPath(caller, scriptIdentifier);
-                    if (result == null) {
-                        SlingScriptHelper sling = BindingsUtils.getHelper(renderContext.getBindings());
-                        if (sling != null) {
-                            caller = getResource(scriptingResourceResolverProvider.getRequestScopedResourceResolver(),
-                                    sling.getScript().getScriptResource());
-                            result = ResourceResolution.getResourceFromSearchPath(caller, scriptIdentifier);
+                    // recheck state in case another writer thread acquired the lock before this one
+                    if (!resolutionCache.containsKey(cacheKey)) {
+                        result = internalResolveScript(request, renderContext, scriptIdentifier);
+                        if (result != null) {
+                            resolutionCache.put(cacheKey, result.getPath());
+                        } else {
+                            resolutionCache.put(cacheKey, NOT_FOUND_MARKER);
                         }
-                    }
-                    if (result != null) {
-                       resolutionCache.put(cacheKey, result.getPath());
                     }
                     readLock.lock();
                 } finally {
@@ -120,12 +147,30 @@ public class ScriptDependencyResolver implements ResourceChangeListener, Externa
                 }
             } else {
                 String scriptPath = resolutionCache.get(cacheKey);
-                result = scriptingResourceResolverProvider.getRequestScopedResourceResolver().getResource(scriptPath);
+                if (!scriptPath.equals(NOT_FOUND_MARKER)) {
+                    result = scriptingResourceResolverProvider.getRequestScopedResourceResolver().getResource(scriptPath);
+                }
             }
             return result;
         } finally {
             readLock.unlock();
         }
+    }
+
+    private @Nullable Resource internalResolveScript(SlingHttpServletRequest request, RenderContext renderContext,
+                                                     String scriptIdentifier) {
+        Resource caller =
+                ResourceResolution.getResourceForRequest(scriptingResourceResolverProvider.getRequestScopedResourceResolver(),
+                        request);
+        Resource result = ResourceResolution.getResourceFromSearchPath(caller, scriptIdentifier);
+        if (result == null) {
+            SlingScriptHelper sling = BindingsUtils.getHelper(renderContext.getBindings());
+            if (sling != null) {
+                caller = scriptingResourceResolverProvider.getRequestScopedResourceResolver().getResource(sling.getScript().getScriptResource().getPath());
+                result = ResourceResolution.getResourceFromSearchPath(caller, scriptIdentifier);
+            }
+        }
+        return result;
     }
 
     @Override
@@ -154,24 +199,6 @@ public class ScriptDependencyResolver implements ResourceChangeListener, Externa
         }
     }
 
-    private Resource getResource(@NotNull ResourceResolver resolver, @NotNull Resource resource) {
-        String path = resource.getPath();
-        if (path.startsWith("/")) {
-            return resolver.getResource(path);
-        } else {
-            for (String sp : resolver.getSearchPath()) {
-                String absolutePath = ResourceUtil.normalize(sp + path);
-                if (absolutePath != null) {
-                    Resource resolved = resolver.getResource(absolutePath);
-                    if (resolved != null) {
-                        return resolved;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
     private static class Cache extends LinkedHashMap<String, String> {
 
         private final int cacheSize;
@@ -193,6 +220,11 @@ public class ScriptDependencyResolver implements ResourceChangeListener, Externa
                 return super.equals(o) && cacheSize == other.cacheSize;
             }
             return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), cacheSize);
         }
     }
 

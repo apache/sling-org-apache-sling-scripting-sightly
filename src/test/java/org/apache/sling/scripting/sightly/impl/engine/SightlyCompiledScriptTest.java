@@ -29,6 +29,7 @@ import javax.script.SimpleBindings;
 
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.scripting.SlingBindings;
+import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.scripting.sightly.render.RenderUnit;
 import org.apache.sling.testing.mock.osgi.MockOsgi;
 import org.apache.sling.testing.mock.sling.MockSling;
@@ -77,7 +78,7 @@ public class SightlyCompiledScriptTest {
         Bindings scriptContextBindings = new SimpleBindings(){{
             put("test", "testValue");
             put(SlingBindings.REQUEST, request);
-            put(SlingBindings.SLING, MockSling.newSlingScriptHelper(bundleContext));
+            put(SlingBindings.SLING, mock(SlingScriptHelper.class));
         }};
         SlingBindings oldBindings = new SlingBindings();
         oldBindings.put("old", "oldValue");
