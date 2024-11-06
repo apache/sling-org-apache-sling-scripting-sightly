@@ -128,7 +128,6 @@ public class ScriptDependencyResolver implements ResourceChangeListener, Externa
         try {
             String cacheKey = request.getResource().getResourceType() + ":" + scriptIdentifier;
             Resource result = null;
-            String resourcePath = null;
             if (!resolutionCache.containsKey(cacheKey)) {
                 readLock.unlock();
                 writeLock.lock();
@@ -141,21 +140,16 @@ public class ScriptDependencyResolver implements ResourceChangeListener, Externa
                         } else {
                             resolutionCache.put(cacheKey, NOT_FOUND_MARKER);
                         }
-                    } else {
-                        resourcePath = resolutionCache.get(cacheKey);
                     }
                     readLock.lock();
                 } finally {
                     writeLock.unlock();
                 }
-            } else {
-                String scriptPath = resolutionCache.get(cacheKey);
-                if (!scriptPath.equals(NOT_FOUND_MARKER)) {
-                    result = scriptingResourceResolverProvider.getRequestScopedResourceResolver().getResource(scriptPath);
-                }
             }
-            if (resourcePath != null && !resourcePath.equals(NOT_FOUND_MARKER)) {
-                result = scriptingResourceResolverProvider.getRequestScopedResourceResolver().getResource(resourcePath);
+            String scriptPath = resolutionCache.get(cacheKey);
+            // in case another thread was downgrading the lock, we need to recheck the value
+            if (result == null && scriptPath != null && !scriptPath.equals(NOT_FOUND_MARKER)) {
+                result = scriptingResourceResolverProvider.getRequestScopedResourceResolver().getResource(scriptPath);
             }
             return result;
         } finally {

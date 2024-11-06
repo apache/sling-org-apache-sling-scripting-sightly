@@ -19,12 +19,12 @@
 package org.apache.sling.scripting.sightly.impl.utils;
 
 
+import javax.script.Bindings;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.script.Bindings;
 
 import org.apache.sling.api.resource.ModifiableValueMap;
 import org.apache.sling.api.resource.PersistenceException;

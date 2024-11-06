@@ -18,11 +18,7 @@
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 package org.apache.sling.scripting.sightly.impl.utils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import javax.script.Bindings;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,8 +28,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import javax.script.Bindings;
 
 import org.apache.sling.api.resource.ModifiableValueMap;
 import org.apache.sling.api.resource.PersistenceException;
@@ -50,6 +44,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 
 @RunWith(Parameterized.class)
@@ -84,7 +84,7 @@ public class ScriptDependencyResolverConcurrentTest {
     }
 
     @Test
-    public void testDependenciesResolvingCacheEnabledConcurren_neverReturnsNull() throws InterruptedException, ExecutionException  {
+    public void testDependenciesResolvingCacheEnabledConcurrent_neverReturnsNull() throws InterruptedException, ExecutionException  {
         SightlyEngineConfiguration configuration = mock(SightlyEngineConfiguration.class);
         when(configuration.getScriptResolutionCacheSize()).thenReturn(1024);
         context.registerService(configuration);
