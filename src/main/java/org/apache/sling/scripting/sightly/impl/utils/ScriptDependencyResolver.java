@@ -145,11 +145,11 @@ public class ScriptDependencyResolver implements ResourceChangeListener, Externa
                 } finally {
                     writeLock.unlock();
                 }
-            } else {
-                String scriptPath = resolutionCache.get(cacheKey);
-                if (!scriptPath.equals(NOT_FOUND_MARKER)) {
-                    result = scriptingResourceResolverProvider.getRequestScopedResourceResolver().getResource(scriptPath);
-                }
+            }
+            String scriptPath = resolutionCache.get(cacheKey);
+            // in case another thread was downgrading the lock, we need to recheck the value
+            if (result == null && scriptPath != null && !scriptPath.equals(NOT_FOUND_MARKER)) {
+                result = scriptingResourceResolverProvider.getRequestScopedResourceResolver().getResource(scriptPath);
             }
             return result;
         } finally {

@@ -18,20 +18,22 @@
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 package org.apache.sling.scripting.sightly.impl.utils;
 
-
 import javax.script.Bindings;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.apache.sling.api.resource.ModifiableValueMap;
 import org.apache.sling.api.resource.PersistenceException;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceUtil;
-import org.apache.sling.api.resource.observation.ResourceChange;
 import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyEngineConfiguration;
@@ -40,19 +42,25 @@ import org.apache.sling.testing.mock.sling.junit.SlingContext;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 
-public class ScriptDependencyResolverTest {
-
-    private ScriptDependencyResolver scriptDependencyResolver;
+@RunWith(Parameterized.class)
+public class ScriptDependencyResolverConcurrentTest {
+    
+    @Parameterized.Parameters
+    public static Object[] data() {
+        return new Object[20][0];
+    }
+    
+    
 
     @Rule
     public SlingContext context = new SlingContext();
@@ -76,34 +84,7 @@ public class ScriptDependencyResolverTest {
     }
 
     @Test
-    public void testDependenciesResolvingCacheDisabled() {
-        SightlyEngineConfiguration configuration = mock(SightlyEngineConfiguration.class);
-        when(configuration.getScriptResolutionCacheSize()).thenReturn(0);
-        context.registerService(configuration);
-
-        ResourceResolver scriptingResolver = spy(context.resourceResolver());
-
-        ScriptingResourceResolverProvider scriptingResourceResolverProvider =
-                mock(ScriptingResourceResolverProvider.class);
-        when(scriptingResourceResolverProvider.getRequestScopedResourceResolver()).thenReturn(scriptingResolver);
-        context.registerService(ScriptingResourceResolverProvider.class, scriptingResourceResolverProvider);
-
-        scriptDependencyResolver = context.registerInjectActivateService(new ScriptDependencyResolver());
-
-        RenderContext renderContext = mock(RenderContext.class);
-        Bindings bindings = mock(Bindings.class);
-        when(renderContext.getBindings()).thenReturn(bindings);
-        when(bindings.get(SlingBindings.REQUEST)).thenReturn(context.request());
-
-        Resource partial = scriptDependencyResolver.resolveScript(renderContext, "partial.html");
-        assertNotNull(partial);
-        partial = scriptDependencyResolver.resolveScript(renderContext, "partial.html");
-        assertNotNull(partial);
-        verify(scriptingResolver, times(8)).getResource(anyString());
-    }
-
-    @Test
-    public void testDependenciesResolvingCacheEnabled() {
+    public void testDependenciesResolvingCacheEnabledConcurrent_neverReturnsNull() throws InterruptedException, ExecutionException  {
         SightlyEngineConfiguration configuration = mock(SightlyEngineConfiguration.class);
         when(configuration.getScriptResolutionCacheSize()).thenReturn(1024);
         context.registerService(configuration);
@@ -115,34 +96,36 @@ public class ScriptDependencyResolverTest {
         when(scriptingResourceResolverProvider.getRequestScopedResourceResolver()).thenReturn(scriptingResolver);
         context.registerService(ScriptingResourceResolverProvider.class, scriptingResourceResolverProvider);
 
-        scriptDependencyResolver = context.registerInjectActivateService(new ScriptDependencyResolver());
+        ScriptDependencyResolver scriptDependencyResolver = spy(context.registerInjectActivateService(new ScriptDependencyResolver()));
 
         RenderContext renderContext = mock(RenderContext.class);
         Bindings bindings = mock(Bindings.class);
         when(renderContext.getBindings()).thenReturn(bindings);
         when(bindings.get(SlingBindings.REQUEST)).thenReturn(context.request());
+        
+        // invoke resolveScript with the same identifier
+        int size = 100;
+        ExecutorService executor = Executors.newFixedThreadPool(size);
 
-        Resource partial = scriptDependencyResolver.resolveScript(renderContext, "partial.html");
-        assertNotNull(partial);
-        partial = scriptDependencyResolver.resolveScript(renderContext, "partial.html");
-        assertNotNull(partial);
-        verify(scriptingResolver, times(5)).getResource(anyString());
+        try {
+            List<Future<Resource>> resolutionValues = new ArrayList<>();
+            for (int i = 0; i < size; i++) {
+                resolutionValues.add(executor.submit(() -> {
+                    return scriptDependencyResolver.resolveScript(renderContext, "partial.html");
+                }));
+            }
+            int nullValues = 0;
+            for (Future<Resource> v : resolutionValues) {
+                Resource r = v.get();
+                if (r == null) {
+                    nullValues++;
+                }
+            }
+            assertEquals("resolveScript must never return null here",0, nullValues);
+        } finally { 
+            executor.shutdown();
+        }
 
-        // simulate a change in the resource tree
-        List<ResourceChange> changes = new ArrayList<>();
-        changes.add(mock(ResourceChange.class));
-        scriptDependencyResolver.onChange(changes);
-
-
-        // cache should be empty; another retrieval should increase the invocations by 4
-        partial = scriptDependencyResolver.resolveScript(renderContext, "partial.html");
-        assertNotNull(partial);
-        verify(scriptingResolver, times(9)).getResource(anyString());
-
-        // cache repopulated; another retrieval should increase the invocations only by 1
-        partial = scriptDependencyResolver.resolveScript(renderContext, "partial.html");
-        assertNotNull(partial);
-        verify(scriptingResolver, times(10)).getResource(anyString());
     }
 
 }
