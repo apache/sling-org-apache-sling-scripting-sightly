@@ -18,12 +18,9 @@ package org.apache.sling.scripting.sightly.impl.utils;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
@@ -75,10 +72,7 @@ public class ScriptDependencyResolver implements ResourceChangeListener, Externa
     @Reference
     private ResourceResolverFactory resourceResolverFactory;
 
-    private Map<String, String> resolutionCache = new Cache(0);
-    private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock(true);
-    private final Lock readLock = rwl.readLock();
-    private final Lock writeLock = rwl.writeLock();
+    private Map<String, String> resolutionCache = new ConcurrentHashMap<>();
 
     private ServiceRegistration<ResourceChangeListener> resourceChangeListenerServiceRegistration;
 
@@ -86,17 +80,11 @@ public class ScriptDependencyResolver implements ResourceChangeListener, Externa
 
     private static final String NOT_FOUND_MARKER = "#NOT_FOUND#";
 
-    @SuppressWarnings("squid:S1149")
     @Activate
     private void activate(ComponentContext componentContext) {
         int cacheSize = sightlyEngineConfiguration.getScriptResolutionCacheSize();
-        if (cacheSize < 1024) {
-            cacheEnabled = false;
-            resolutionCache = new Cache(0);
-        } else {
-            cacheEnabled = true;
-            resolutionCache = new Cache(cacheSize);
-        }
+        cacheEnabled =  (cacheSize >= 1024); 
+
         if (cacheEnabled) {
             componentContext.getBundleContext().addBundleListener(this);
             Dictionary<String, Object> resourceChangeListenerProperties = new Hashtable<>();
@@ -119,42 +107,32 @@ public class ScriptDependencyResolver implements ResourceChangeListener, Externa
         componentContext.getBundleContext().removeBundleListener(this);
     }
 
+    /**
+     * Resolves a script identifier to a resource
+     * @param renderContext the context
+     * @param scriptIdentifier the script identifier
+     * @return the matching resource or null if the looked up resource does not exist
+     */
     public Resource resolveScript(RenderContext renderContext, String scriptIdentifier) {
         SlingHttpServletRequest request = BindingsUtils.getRequest(renderContext.getBindings());
         if (!cacheEnabled) {
             return internalResolveScript(request, renderContext, scriptIdentifier);
         }
-        readLock.lock();
-        try {
-            String cacheKey = request.getResource().getResourceType() + ":" + scriptIdentifier;
-            Resource result = null;
-            if (!resolutionCache.containsKey(cacheKey)) {
-                readLock.unlock();
-                writeLock.lock();
-                try {
-                    // recheck state in case another writer thread acquired the lock before this one
-                    if (!resolutionCache.containsKey(cacheKey)) {
-                        result = internalResolveScript(request, renderContext, scriptIdentifier);
-                        if (result != null) {
-                            resolutionCache.put(cacheKey, result.getPath());
-                        } else {
-                            resolutionCache.put(cacheKey, NOT_FOUND_MARKER);
-                        }
+        String cacheKey = request.getResource().getResourceType() + ":" + scriptIdentifier;
+        String scriptPath = resolutionCache.computeIfAbsent(cacheKey,
+                t -> {
+                    Resource r = internalResolveScript(request, renderContext, scriptIdentifier);
+                    if (r == null) {
+                        return NOT_FOUND_MARKER;
+                    } else {
+                        return r.getPath();
                     }
-                    readLock.lock();
-                } finally {
-                    writeLock.unlock();
-                }
-            }
-            String scriptPath = resolutionCache.get(cacheKey);
-            // in case another thread was downgrading the lock, we need to recheck the value
-            if (result == null && scriptPath != null && !scriptPath.equals(NOT_FOUND_MARKER)) {
-                result = scriptingResourceResolverProvider.getRequestScopedResourceResolver().getResource(scriptPath);
-            }
-            return result;
-        } finally {
-            readLock.unlock();
+                });
+        if (scriptPath.equals(NOT_FOUND_MARKER)) {
+            return null;
         }
+        return scriptingResourceResolverProvider.getRequestScopedResourceResolver().getResource(scriptPath);
+
     }
 
     private @Nullable Resource internalResolveScript(SlingHttpServletRequest request, RenderContext renderContext,
@@ -176,12 +154,7 @@ public class ScriptDependencyResolver implements ResourceChangeListener, Externa
     @Override
     public void onChange(@NotNull List<ResourceChange> changes) {
         // we won't be specific about the changes; wipe the whole cache
-        writeLock.lock();
-        try {
-            resolutionCache.clear();
-        } finally {
-            writeLock.unlock();
-        }
+        resolutionCache.clear();
     }
 
     @Override
@@ -190,42 +163,7 @@ public class ScriptDependencyResolver implements ResourceChangeListener, Externa
         Dictionary<String, String> bundleHeaders = event.getBundle().getHeaders();
         String requireCapabilityHeader = bundleHeaders.get("Require-Capability");
         if (StringUtils.isNotEmpty(requireCapabilityHeader) && requireCapabilityHeader.contains(BUNDLED_SCRIPTS_REQUIREMENT)) {
-            writeLock.lock();
-            try {
-                resolutionCache.clear();
-            } finally {
-                writeLock.unlock();
-            }
+            resolutionCache.clear();
         }
     }
-
-    private static class Cache extends LinkedHashMap<String, String> {
-
-        private final int cacheSize;
-
-        public Cache(int cacheSize) {
-            super();
-            this.cacheSize = cacheSize;
-        }
-
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
-            return size() > cacheSize;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (o instanceof Cache) {
-                Cache other = (Cache) o;
-                return super.equals(o) && cacheSize == other.cacheSize;
-            }
-            return false;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(super.hashCode(), cacheSize);
-        }
-    }
-
 }
