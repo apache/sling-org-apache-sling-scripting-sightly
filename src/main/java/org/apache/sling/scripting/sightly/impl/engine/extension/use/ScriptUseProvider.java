@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,19 +15,18 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
-
+ */
 package org.apache.sling.scripting.sightly.impl.engine.extension.use;
-
-import java.io.StringReader;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 
 import javax.script.Bindings;
 import javax.script.Compilable;
 import javax.script.CompiledScript;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
+
+import java.io.StringReader;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -62,21 +61,17 @@ import org.slf4j.LoggerFactory;
 @Component(
         service = UseProvider.class,
         configurationPid = "org.apache.sling.scripting.sightly.impl.engine.extension.use.ScriptUseProvider",
-        property = {
-                Constants.SERVICE_RANKING + ":Integer=0"
-        }
-)
+        property = {Constants.SERVICE_RANKING + ":Integer=0"})
 public class ScriptUseProvider implements UseProvider {
 
     @interface Configuration {
 
         @AttributeDefinition(
                 name = "Service Ranking",
-                description = "The Service Ranking value acts as the priority with which this Use Provider is queried to return an " +
-                        "Use-object. A higher value represents a higher priority."
-        )
+                description =
+                        "The Service Ranking value acts as the priority with which this Use Provider is queried to return an "
+                                + "Use-object. A higher value represents a higher priority.")
         int service_ranking() default 0;
-
     }
 
     private static final Logger log = LoggerFactory.getLogger(ScriptUseProvider.class);
@@ -114,20 +109,18 @@ public class ScriptUseProvider implements UseProvider {
                         CachedScript cachedScript = scriptCache.getScript(scriptUrlAsString);
                         if (cachedScript == null) {
                             Compilable compilableScriptEngine = (Compilable) scriptEngine;
-                            ScriptNameAwareReader reader =
-                                    new ScriptNameAwareReader(new StringReader(IOUtils.toString(script, StandardCharsets.UTF_8)),
-                                            scriptUrlAsString);
+                            ScriptNameAwareReader reader = new ScriptNameAwareReader(
+                                    new StringReader(IOUtils.toString(script, StandardCharsets.UTF_8)),
+                                    scriptUrlAsString);
                             compiledScript = compilableScriptEngine.compile(reader);
                         } else {
                             compiledScript = cachedScript.getCompiledScript();
                         }
                         return ProviderOutcome.notNullOrFailure(compiledScript.eval(bindings));
                     } else {
-                        ScriptNameAwareReader reader =
-                                new ScriptNameAwareReader(new StringReader(IOUtils.toString(script, StandardCharsets.UTF_8)),
-                                        scriptUrlAsString);
-                        return ProviderOutcome
-                                .notNullOrFailure(scriptEngine.eval(reader, bindings));
+                        ScriptNameAwareReader reader = new ScriptNameAwareReader(
+                                new StringReader(IOUtils.toString(script, StandardCharsets.UTF_8)), scriptUrlAsString);
+                        return ProviderOutcome.notNullOrFailure(scriptEngine.eval(reader, bindings));
                     }
                 }
             } catch (Exception e) {
@@ -160,5 +153,4 @@ public class ScriptUseProvider implements UseProvider {
         }
         return extension;
     }
-
 }

@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,16 +15,15 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
-
+ */
 package org.apache.sling.scripting.sightly.impl.engine.extension.use;
-
-import java.io.InputStream;
-import java.io.InputStreamReader;
 
 import javax.script.Bindings;
 import javax.script.CompiledScript;
 import javax.script.ScriptEngineManager;
+
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
@@ -32,7 +31,6 @@ import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.scripting.api.CachedScript;
 import org.apache.sling.scripting.api.ScriptCache;
-import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.engine.ResourceResolution;
@@ -58,19 +56,16 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 @Component(
         service = UseProvider.class,
         configurationPid = "org.apache.sling.scripting.sightly.impl.engine.extension.use.RenderUnitProvider",
-        property = {
-                Constants.SERVICE_RANKING + ":Integer=100"
-        }
-)
+        property = {Constants.SERVICE_RANKING + ":Integer=100"})
 public class RenderUnitProvider implements UseProvider {
 
     @interface Configuration {
 
         @AttributeDefinition(
                 name = "Service Ranking",
-                description = "The Service Ranking value acts as the priority with which this Use Provider is queried to return an " +
-                        "Use-object. A higher value represents a higher priority."
-        )
+                description =
+                        "The Service Ranking value acts as the priority with which this Use Provider is queried to return an "
+                                + "Use-object. A higher value represents a higher priority.")
         int service_ranking() default 100;
     }
 
@@ -110,12 +105,14 @@ public class RenderUnitProvider implements UseProvider {
                     errorMessage.append(".");
                     return ProviderOutcome.failure(new SightlyException(errorMessage.toString()));
                 } else {
-                    return ProviderOutcome.failure(new SightlyException("Cannot resolve template " + identifier + " for script " + sling
-                            .getScript().getScriptResource().getPath()));
+                    return ProviderOutcome.failure(
+                            new SightlyException("Cannot resolve template " + identifier + " for script "
+                                    + sling.getScript().getScriptResource().getPath()));
                 }
             }
             try {
-                if ("true".equalsIgnoreCase((String) renderUnitResource.getResourceMetadata().get("sling.servlet.resource"))) {
+                if ("true".equalsIgnoreCase((String)
+                        renderUnitResource.getResourceMetadata().get("sling.servlet.resource"))) {
                     BundledRenderUnit bundledRenderUnit = renderUnitResource.adaptTo(BundledRenderUnit.class);
                     if (bundledRenderUnit != null && bundledRenderUnit.getUnit() instanceof RenderUnit) {
                         return ProviderOutcome.success(bundledRenderUnit.getUnit());
@@ -126,8 +123,8 @@ public class RenderUnitProvider implements UseProvider {
                 if (cachedScript != null) {
                     compiledScript = (SightlyCompiledScript) cachedScript.getCompiledScript();
                 } else {
-                    SightlyScriptEngine sightlyScriptEngine =
-                            (SightlyScriptEngine) scriptEngineManager.getEngineByName(SightlyScriptEngineFactory.SHORT_NAME);
+                    SightlyScriptEngine sightlyScriptEngine = (SightlyScriptEngine)
+                            scriptEngineManager.getEngineByName(SightlyScriptEngineFactory.SHORT_NAME);
                     String encoding = renderUnitResource.getResourceMetadata().getCharacterEncoding();
                     if (StringUtils.isEmpty(encoding)) {
                         encoding = "UTF-8";
@@ -137,7 +134,8 @@ public class RenderUnitProvider implements UseProvider {
                         return ProviderOutcome.failure();
                     }
                     InputStreamReader inputStreamReader = new InputStreamReader(inputStream, encoding);
-                    ScriptNameAwareReader reader = new ScriptNameAwareReader(inputStreamReader, renderUnitResource.getPath());
+                    ScriptNameAwareReader reader =
+                            new ScriptNameAwareReader(inputStreamReader, renderUnitResource.getPath());
                     compiledScript = (SightlyCompiledScript) sightlyScriptEngine.compile(reader);
                     scriptCache.putScript(new CachedScript() {
                         @Override

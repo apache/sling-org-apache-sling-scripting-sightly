@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,8 +15,11 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine.extension;
+
+import javax.script.Bindings;
+import javax.script.SimpleBindings;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -26,9 +29,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.script.Bindings;
-import javax.script.SimpleBindings;
 
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.render.AbstractRuntimeObjectModel;
@@ -44,29 +44,31 @@ import static org.junit.Assume.assumeThat;
 public class FormatFilterExtensionTest {
 
     private final RenderContext renderContext = new RenderContext() {
-        @Override public RuntimeObjectModel getObjectModel() {
-            return new AbstractRuntimeObjectModel() {
-            };
+        @Override
+        public RuntimeObjectModel getObjectModel() {
+            return new AbstractRuntimeObjectModel() {};
         }
 
-        @Override public Bindings getBindings() {
+        @Override
+        public Bindings getBindings() {
             return new SimpleBindings();
         }
 
-        @Override public Object call(String s, Object... objects) {
+        @Override
+        public Object call(String s, Object... objects) {
             return null;
         }
     };
     private final FormatFilterExtension subject = new FormatFilterExtension();
-    private final Date testDate = Date.from(LocalDateTime.of(1918, 12, 1, 0, 0, 0, 0)
-        .atZone(ZoneId.of("UTC"))
-        .toInstant());
+    private final Date testDate = Date.from(
+            LocalDateTime.of(1918, 12, 1, 0, 0, 0, 0).atZone(ZoneId.of("UTC")).toInstant());
 
     @Test
     public void testNoop() {
         // constructed case, it is actually difficult to find a pattern that is not a date-time or decimal number format
-        assertEquals("0-#",
-            subject.call(renderContext, "0-#", Collections.singletonMap(FormatFilterExtension.FORMAT, "ignored")));
+        assertEquals(
+                "0-#",
+                subject.call(renderContext, "0-#", Collections.singletonMap(FormatFilterExtension.FORMAT, "ignored")));
     }
 
     @Test
@@ -81,15 +83,18 @@ public class FormatFilterExtensionTest {
 
     @Test
     public void testDateFormatNull() {
-        assertNull(subject.call(renderContext, "default", new HashMap<String, Object>() {{
-            put(FormatFilterExtension.TYPE_OPTION, "date");
-            put(FormatFilterExtension.FORMAT, null);
-        }}));
+        assertNull(subject.call(renderContext, "default", new HashMap<String, Object>() {
+            {
+                put(FormatFilterExtension.TYPE_OPTION, "date");
+                put(FormatFilterExtension.FORMAT, null);
+            }
+        }));
     }
 
     @Test
     public void testDateFormatNoDateObject() {
-        assertNull(subject.call(renderContext, "yyyy-MM-dd", Collections.singletonMap(FormatFilterExtension.FORMAT, new Object())));
+        assertNull(subject.call(
+                renderContext, "yyyy-MM-dd", Collections.singletonMap(FormatFilterExtension.FORMAT, new Object())));
     }
 
     @Test(expected = SightlyException.class)
@@ -125,10 +130,11 @@ public class FormatFilterExtensionTest {
     @Test
     public void testDateFormatWithEscapedCharacters() {
         assumeJdk8LocaleData();
-        assertDate("01 December '18 12:00 AM; day in year: 335; week in year: 48",
-            "dd MMMM ''yy hh:mm a; 'day in year': D; 'week in year': w",
-            "UTC",
-            Locale.UK.toString());
+        assertDate(
+                "01 December '18 12:00 AM; day in year: 335; week in year: 48",
+                "dd MMMM ''yy hh:mm a; 'day in year': D; 'week in year': w",
+                "UTC",
+                Locale.UK.toString());
     }
 
     /**
@@ -175,10 +181,14 @@ public class FormatFilterExtensionTest {
 
     @Test
     public void testDateFormatMixedWithReservedCharacters() {
-        assertEquals("#1: 1918 {0}", subject.call(renderContext, "#1: yyyy {0}", new HashMap<String, Object>() {{
-            put(FormatFilterExtension.TYPE_OPTION, FormatFilterExtension.DATE_FORMAT_TYPE);
-            put(FormatFilterExtension.FORMAT_OPTION, testDate);
-        }}));
+        assertEquals(
+                "#1: 1918 {0}",
+                subject.call(renderContext, "#1: yyyy {0}", new HashMap<String, Object>() {
+                    {
+                        put(FormatFilterExtension.TYPE_OPTION, FormatFilterExtension.DATE_FORMAT_TYPE);
+                        put(FormatFilterExtension.FORMAT_OPTION, testDate);
+                    }
+                }));
     }
 
     @Test
@@ -189,7 +199,7 @@ public class FormatFilterExtensionTest {
     }
 
     private void assumeJdk8LocaleData() {
-        if(!System.getProperty("java.version").startsWith("1.8")) {
+        if (!System.getProperty("java.version").startsWith("1.8")) {
             assumeThat(System.getProperty("java.locale.providers"), startsWith("COMPAT"));
         }
     }
@@ -208,53 +218,61 @@ public class FormatFilterExtensionTest {
 
     @Test
     public void testSimpleStringFormat() {
-        Object result = subject.call(renderContext,
-            "This {0} a {1} format", Collections.singletonMap("format", Arrays.asList("is", "simple")));
+        Object result = subject.call(
+                renderContext,
+                "This {0} a {1} format",
+                Collections.singletonMap("format", Arrays.asList("is", "simple")));
         assertEquals("This is a simple format", result);
     }
 
     @Test
     public void testStringFormat() {
-        Object result = subject.call(renderContext,
-            "This {0} a {1} format", new HashMap<String, Object>() {{
+        Object result = subject.call(renderContext, "This {0} a {1} format", new HashMap<String, Object>() {
+            {
                 put(FormatFilterExtension.FORMAT, Arrays.asList("is", "simple"));
                 put(FormatFilterExtension.TYPE_OPTION, FormatFilterExtension.STRING_FORMAT_TYPE);
-            }});
+            }
+        });
         assertEquals("This is a simple format", result);
     }
 
     @Test
     public void testSimpleStringFormatWithSingleParameter() {
-        Object result = subject.call(renderContext,
-            "Hello {0}", Collections.singletonMap(FormatFilterExtension.FORMAT, "world"));
+        Object result = subject.call(
+                renderContext, "Hello {0}", Collections.singletonMap(FormatFilterExtension.FORMAT, "world"));
         assertEquals("Hello world", result);
     }
 
     @Test
     public void testComplexStringFormatNoSimplePlaceholderWithLocale() {
-        Object result = subject.call(renderContext,
-            "This query has {0,plural,zero {# results} one {# result} other {# results}}",
-            new HashMap<String, Object>() {{
-                put(FormatFilterExtension.FORMAT, Collections.singletonList(7));
-                put(FormatFilterExtension.LOCALE_OPTION, "en_US");
-            }});
+        Object result = subject.call(
+                renderContext,
+                "This query has {0,plural,zero {# results} one {# result} other {# results}}",
+                new HashMap<String, Object>() {
+                    {
+                        put(FormatFilterExtension.FORMAT, Collections.singletonList(7));
+                        put(FormatFilterExtension.LOCALE_OPTION, "en_US");
+                    }
+                });
         assertEquals("This query has 7 results", result);
     }
 
     @Test
     public void testComplexStringFormatWithSimplePlaceholderNoLocale() {
-        Object result = subject.call(renderContext,
-            "This {0} has {1,plural,zero {# results} one {# result} other {# results}}",
-            Collections.singletonMap(FormatFilterExtension.FORMAT, Arrays.asList("query", 7)));
+        Object result = subject.call(
+                renderContext,
+                "This {0} has {1,plural,zero {# results} one {# result} other {# results}}",
+                Collections.singletonMap(FormatFilterExtension.FORMAT, Arrays.asList("query", 7)));
         assertEquals("This query has 7 results", result);
     }
 
     @Test
     public void testComplexStringFormatWithSimplePlaceholderNoIcuSupport() {
         subject.hasIcuSupport = false;
-        Object result = subject.call(renderContext,
-            "This {0} has {1,plural,zero {{1} results} one {{1} result} other {{1} results}}",
-            Collections.singletonMap(FormatFilterExtension.FORMAT, Arrays.asList("query", 7)));
+        Object result = subject.call(
+                renderContext,
+                "This {0} has {1,plural,zero {{1} results} one {{1} result} other {{1} results}}",
+                Collections.singletonMap(FormatFilterExtension.FORMAT, Arrays.asList("query", 7)));
         assertNull(result);
     }
 }

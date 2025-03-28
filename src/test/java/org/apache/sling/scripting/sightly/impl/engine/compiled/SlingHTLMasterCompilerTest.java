@@ -1,21 +1,21 @@
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- ~ Licensed to the Apache Software Foundation (ASF) under one
- ~ or more contributor license agreements.  See the NOTICE file
- ~ distributed with this work for additional information
- ~ regarding copyright ownership.  The ASF licenses this file
- ~ to you under the Apache License, Version 2.0 (the
- ~ "License"); you may not use this file except in compliance
- ~ with the License.  You may obtain a copy of the License at
- ~
- ~   http://www.apache.org/licenses/LICENSE-2.0
- ~
- ~ Unless required by applicable law or agreed to in writing,
- ~ software distributed under the License is distributed on an
- ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- ~ KIND, either express or implied.  See the License for the
- ~ specific language governing permissions and limitations
- ~ under the License.
- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.sling.scripting.sightly.impl.engine.compiled;
 
 import java.io.ByteArrayOutputStream;
@@ -79,7 +79,8 @@ public class SlingHTLMasterCompilerTest {
 
         ResourceResolver scriptingResourceResolver = mock(ResourceResolver.class);
         scriptingResourceResolverProvider = mock(ScriptingResourceResolverProvider.class);
-        when(scriptingResourceResolverProvider.getRequestScopedResourceResolver()).thenReturn(scriptingResourceResolver);
+        when(scriptingResourceResolverProvider.getRequestScopedResourceResolver())
+                .thenReturn(scriptingResourceResolver);
         when(scriptingResourceResolver.getSearchPath()).thenReturn(new String[] {"/apps", "/libs"});
 
         compiler = spy(new SlingHTLMasterCompiler());
@@ -110,7 +111,8 @@ public class SlingHTLMasterCompilerTest {
     public void testActivateNoPreviousInfo() {
         ClassLoaderWriter classLoaderWriter = mock(ClassLoaderWriter.class);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        when(classLoaderWriter.getOutputStream(SlingHTLMasterCompiler.SIGHTLY_CONFIG_FILE)).thenReturn(outputStream);
+        when(classLoaderWriter.getOutputStream(SlingHTLMasterCompiler.SIGHTLY_CONFIG_FILE))
+                .thenReturn(outputStream);
         Whitebox.setInternalState(compiler, "classLoaderWriter", classLoaderWriter);
         compiler.activate();
         verify(classLoaderWriter).delete(sightlyEngineConfiguration.getScratchFolder());
@@ -118,7 +120,7 @@ public class SlingHTLMasterCompilerTest {
     }
 
     @Test
-    public void testActivateOverPreviousVersion()  {
+    public void testActivateOverPreviousVersion() {
         ClassLoaderWriter classLoaderWriter = mock(ClassLoaderWriter.class);
         try {
             when(classLoaderWriter.getInputStream(SlingHTLMasterCompiler.SIGHTLY_CONFIG_FILE))
@@ -127,8 +129,10 @@ public class SlingHTLMasterCompilerTest {
             fail("IOException while setting tests.");
         }
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        when(classLoaderWriter.getOutputStream(SlingHTLMasterCompiler.SIGHTLY_CONFIG_FILE)).thenReturn(outputStream);
-        when(classLoaderWriter.delete(sightlyEngineConfiguration.getScratchFolder())).thenReturn(true);
+        when(classLoaderWriter.getOutputStream(SlingHTLMasterCompiler.SIGHTLY_CONFIG_FILE))
+                .thenReturn(outputStream);
+        when(classLoaderWriter.delete(sightlyEngineConfiguration.getScratchFolder()))
+                .thenReturn(true);
         Whitebox.setInternalState(compiler, "classLoaderWriter", classLoaderWriter);
         compiler.activate();
         verify(classLoaderWriter).delete(sightlyEngineConfiguration.getScratchFolder());
@@ -146,7 +150,8 @@ public class SlingHTLMasterCompilerTest {
         }
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         ByteArrayOutputStream spyOutputStream = spy(outputStream);
-        when(classLoaderWriter.getOutputStream(SlingHTLMasterCompiler.SIGHTLY_CONFIG_FILE)).thenReturn(spyOutputStream);
+        when(classLoaderWriter.getOutputStream(SlingHTLMasterCompiler.SIGHTLY_CONFIG_FILE))
+                .thenReturn(spyOutputStream);
         Whitebox.setInternalState(compiler, "classLoaderWriter", classLoaderWriter);
         compiler.activate();
         verify(classLoaderWriter, never()).delete(sightlyEngineConfiguration.getScratchFolder());
@@ -164,7 +169,8 @@ public class SlingHTLMasterCompilerTest {
         String className = "apps.myproject.testcomponents.a.Pojo";
         scriptingResourceResolverProvider = Mockito.mock(ScriptingResourceResolverProvider.class);
         ResourceResolver resolver = Mockito.mock(ResourceResolver.class);
-        when(scriptingResourceResolverProvider.getRequestScopedResourceResolver()).thenReturn(resolver);
+        when(scriptingResourceResolverProvider.getRequestScopedResourceResolver())
+                .thenReturn(resolver);
         Resource pojoResource = Mockito.mock(Resource.class);
         when(pojoResource.getPath()).thenReturn(pojoPath);
         ResourceMetadata mockMetadata = Mockito.mock(ResourceMetadata.class);
@@ -172,7 +178,8 @@ public class SlingHTLMasterCompilerTest {
         when(pojoResource.getResourceMetadata()).thenReturn(mockMetadata);
         when(pojoResource.adaptTo(InputStream.class)).thenReturn(IOUtils.toInputStream("DUMMY", "UTF-8"));
         when(resolver.getResource(pojoPath)).thenReturn(pojoResource);
-        when(classLoaderWriter.getLastModified("/apps/myproject/testcomponents/a/Pojo.class")).thenReturn(2L);
+        when(classLoaderWriter.getLastModified("/apps/myproject/testcomponents/a/Pojo.class"))
+                .thenReturn(2L);
         getInstancePojoTest(className);
         /*
          * assuming the compiled class has a last modified date greater than the source, then the compiler should not recompile the Use
@@ -187,7 +194,8 @@ public class SlingHTLMasterCompilerTest {
         String className = "apps.myproject.testcomponents.a.Pojo";
         scriptingResourceResolverProvider = Mockito.mock(ScriptingResourceResolverProvider.class);
         ResourceResolver resolver = Mockito.mock(ResourceResolver.class);
-        when(scriptingResourceResolverProvider.getRequestScopedResourceResolver()).thenReturn(resolver);
+        when(scriptingResourceResolverProvider.getRequestScopedResourceResolver())
+                .thenReturn(resolver);
         Resource pojoResource = Mockito.mock(Resource.class);
         when(pojoResource.getPath()).thenReturn(pojoPath);
         ResourceMetadata mockMetadata = Mockito.mock(ResourceMetadata.class);
@@ -195,7 +203,8 @@ public class SlingHTLMasterCompilerTest {
         when(pojoResource.getResourceMetadata()).thenReturn(mockMetadata);
         when(pojoResource.adaptTo(InputStream.class)).thenReturn(IOUtils.toInputStream("DUMMY", "UTF-8"));
         when(resolver.getResource(pojoPath)).thenReturn(pojoResource);
-        when(classLoaderWriter.getLastModified("/apps/myproject/testcomponents/a/Pojo.class")).thenReturn(1L);
+        when(classLoaderWriter.getLastModified("/apps/myproject/testcomponents/a/Pojo.class"))
+                .thenReturn(1L);
         getInstancePojoTest(className);
         /*
          * assuming the compiled class has a last modified date greater than the source, then the compiler should not recompile the Use
@@ -210,13 +219,16 @@ public class SlingHTLMasterCompilerTest {
         String className = "apps.myproject.testcomponents.a.Pojo";
         scriptingResourceResolverProvider = Mockito.mock(ScriptingResourceResolverProvider.class);
         ResourceResolver resolver = Mockito.mock(ResourceResolver.class);
-        when(scriptingResourceResolverProvider.getRequestScopedResourceResolver()).thenReturn(resolver);
+        when(scriptingResourceResolverProvider.getRequestScopedResourceResolver())
+                .thenReturn(resolver);
         Resource pojoResource = Mockito.mock(Resource.class);
         when(pojoResource.getPath()).thenReturn(pojoPath);
-        when(resourceBackedPojoChangeMonitor.getLastModifiedDateForJavaUseObject(pojoPath)).thenReturn(1L);
+        when(resourceBackedPojoChangeMonitor.getLastModifiedDateForJavaUseObject(pojoPath))
+                .thenReturn(1L);
         when(pojoResource.adaptTo(InputStream.class)).thenReturn(IOUtils.toInputStream("DUMMY", "UTF-8"));
         when(resolver.getResource(pojoPath)).thenReturn(pojoResource);
-        when(classLoaderWriter.getLastModified("/apps/myproject/testcomponents/a/Pojo.class")).thenReturn(2L);
+        when(classLoaderWriter.getLastModified("/apps/myproject/testcomponents/a/Pojo.class"))
+                .thenReturn(2L);
         getInstancePojoTest(className);
         /*
          * assuming the compiled class has a last modified date greater than the source, then the compiler should not recompile the Use
@@ -231,13 +243,16 @@ public class SlingHTLMasterCompilerTest {
         String className = "apps.myproject.testcomponents.a.Pojo";
         scriptingResourceResolverProvider = Mockito.mock(ScriptingResourceResolverProvider.class);
         ResourceResolver resolver = Mockito.mock(ResourceResolver.class);
-        when(scriptingResourceResolverProvider.getRequestScopedResourceResolver()).thenReturn(resolver);
+        when(scriptingResourceResolverProvider.getRequestScopedResourceResolver())
+                .thenReturn(resolver);
         Resource pojoResource = Mockito.mock(Resource.class);
         when(pojoResource.getPath()).thenReturn(pojoPath);
-        when(resourceBackedPojoChangeMonitor.getLastModifiedDateForJavaUseObject(pojoPath)).thenReturn(2L);
+        when(resourceBackedPojoChangeMonitor.getLastModifiedDateForJavaUseObject(pojoPath))
+                .thenReturn(2L);
         when(pojoResource.adaptTo(InputStream.class)).thenReturn(IOUtils.toInputStream("DUMMY", "UTF-8"));
         when(resolver.getResource(pojoPath)).thenReturn(pojoResource);
-        when(classLoaderWriter.getLastModified("/apps/myproject/testcomponents/a/Pojo.class")).thenReturn(1L);
+        when(classLoaderWriter.getLastModified("/apps/myproject/testcomponents/a/Pojo.class"))
+                .thenReturn(1L);
         getInstancePojoTest(className);
         /*
          * assuming the compiled class has a last modified date greater than the source, then the compiler should not recompile the Use
@@ -248,14 +263,16 @@ public class SlingHTLMasterCompilerTest {
 
     @Test
     public void testGetPOJOFromFQCN() {
-        Map<String, String> expectedScriptNames = new HashMap<String, String>() {{
-            put("/apps/a_b_c/d_e_f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a_b_c/d_e_f/Pojo"));
-            put("/apps/a-b-c/d.e.f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a-b-c/d.e.f/Pojo"));
-            put("/apps/a-b-c/d-e.f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a-b-c/d-e.f/Pojo"));
-            put("/apps/a-b-c/d.e_f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a-b-c/d.e_f/Pojo"));
-            put("/apps/a-b-c/d-e-f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a-b-c/d-e-f/Pojo"));
-            put("/apps/a/b/c/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a/b/c/Pojo"));
-        }};
+        Map<String, String> expectedScriptNames = new HashMap<String, String>() {
+            {
+                put("/apps/a_b_c/d_e_f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a_b_c/d_e_f/Pojo"));
+                put("/apps/a-b-c/d.e.f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a-b-c/d.e.f/Pojo"));
+                put("/apps/a-b-c/d-e.f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a-b-c/d-e.f/Pojo"));
+                put("/apps/a-b-c/d.e_f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a-b-c/d.e_f/Pojo"));
+                put("/apps/a-b-c/d-e-f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a-b-c/d-e-f/Pojo"));
+                put("/apps/a/b/c/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a/b/c/Pojo"));
+            }
+        };
         for (Map.Entry<String, String> scriptEntry : expectedScriptNames.entrySet()) {
             ResourceResolver resolver = Mockito.mock(ResourceResolver.class);
             Resource resource = Mockito.mock(Resource.class);
@@ -263,8 +280,10 @@ public class SlingHTLMasterCompilerTest {
             when(resolver.getResource(scriptEntry.getKey())).thenReturn(resource);
             Resource result = compiler.getPOJOFromFQCN(resolver, scriptEntry.getValue());
             assertNotNull(
-                    String.format("ResourceResolver was expected to find resource %s for POJO %s. Got null instead.", scriptEntry.getKey(),
-                            scriptEntry.getValue()), result);
+                    String.format(
+                            "ResourceResolver was expected to find resource %s for POJO %s. Got null instead.",
+                            scriptEntry.getKey(), scriptEntry.getValue()),
+                    result);
             assertEquals(scriptEntry.getKey(), result.getPath());
         }
     }

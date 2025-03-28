@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,17 +15,17 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine.extension.use;
+
+import javax.script.Bindings;
+import javax.script.SimpleBindings;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
-
-import javax.script.Bindings;
-import javax.script.SimpleBindings;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.scripting.sightly.SightlyException;
@@ -46,10 +46,7 @@ import org.osgi.service.component.annotations.ReferencePolicy;
  */
 @Component(
         service = RuntimeExtension.class,
-        property = {
-                RuntimeExtension.NAME + "=" + RuntimeExtension.USE
-        }
-)
+        property = {RuntimeExtension.NAME + "=" + RuntimeExtension.USE})
 public class UseRuntimeExtension implements RuntimeExtension {
 
     private final Map<ServiceReference, UseProvider> providersMap = new ConcurrentSkipListMap<>();
@@ -73,18 +70,19 @@ public class UseRuntimeExtension implements RuntimeExtension {
             if (outcome.isSuccess()) {
                 return outcome.getResult();
             } else if ((failureCause = outcome.getCause()) != null) {
-                throw new SightlyException("Identifier " + identifier + " cannot be correctly instantiated by the Use API", failureCause);
+                throw new SightlyException(
+                        "Identifier " + identifier + " cannot be correctly instantiated by the Use API", failureCause);
             }
         }
         throw new SightlyException("No use provider could resolve identifier " + identifier);
     }
 
-    // OSGi ################################################################################################################################
+    // OSGi
+    // ################################################################################################################################
     @Reference(
             policy = ReferencePolicy.DYNAMIC,
             service = UseProvider.class,
-            cardinality = ReferenceCardinality.MULTIPLE
-    )
+            cardinality = ReferenceCardinality.MULTIPLE)
     private void bindUseProvider(ServiceReference<UseProvider> serviceReference, UseProvider provider) {
         providersMap.put(serviceReference, provider);
     }

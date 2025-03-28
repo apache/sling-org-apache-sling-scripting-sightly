@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine;
 
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
@@ -34,12 +34,15 @@ class RuntimeExtensionReference implements Comparable<RuntimeExtensionReference>
         this.serviceReference = serviceReference;
         this.runtimeExtension = runtimeExtension;
         final Object ranking = serviceReference.getProperty(Constants.SERVICE_RANKING);
-        if ( ranking instanceof Integer ) {
-            this.priority = (Integer)ranking;
+        if (ranking instanceof Integer) {
+            this.priority = (Integer) ranking;
         } else {
             this.priority = 0;
         }
-        this.name = Converters.standardConverter().convert(serviceReference.getProperty(RuntimeExtension.NAME)).defaultValue("").to(String.class);
+        this.name = Converters.standardConverter()
+                .convert(serviceReference.getProperty(RuntimeExtension.NAME))
+                .defaultValue("")
+                .to(String.class);
     }
 
     @Override

@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,13 +15,13 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine.runtime;
-
-import java.util.Map;
 
 import javax.script.Bindings;
 import javax.script.ScriptContext;
+
+import java.util.Map;
 
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
@@ -41,8 +41,10 @@ public class RenderContextImpl implements RenderContext {
     private final Bindings bindings;
     private final ExtensionRegistryService extensionRegistryService;
 
-    public RenderContextImpl(SightlyEngineConfiguration configuration, ExtensionRegistryService extensionRegistryService,
-                             ScriptContext scriptContext) {
+    public RenderContextImpl(
+            SightlyEngineConfiguration configuration,
+            ExtensionRegistryService extensionRegistryService,
+            ScriptContext scriptContext) {
         this.extensionRegistryService = extensionRegistryService;
         this.bindings = scriptContext.getBindings(ScriptContext.ENGINE_SCOPE);
         runtimeModel = new SlingRuntimeObjectModel(configuration.legacyBooleanCasting());
@@ -71,5 +73,4 @@ public class RenderContextImpl implements RenderContext {
         }
         return extension.call(this, arguments);
     }
-
 }

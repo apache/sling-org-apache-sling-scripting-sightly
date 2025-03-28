@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine;
 
 import java.util.Collections;
@@ -47,13 +47,14 @@ public class ExtensionRegistryService {
     @Reference(
             policy = ReferencePolicy.DYNAMIC,
             service = RuntimeExtension.class,
-            cardinality = ReferenceCardinality.MULTIPLE
-            )
+            cardinality = ReferenceCardinality.MULTIPLE)
     @SuppressWarnings("unused")
-    protected void bindExtensionService(ServiceReference<RuntimeExtension> serviceReference, RuntimeExtension runtimeExtension) {
+    protected void bindExtensionService(
+            ServiceReference<RuntimeExtension> serviceReference, RuntimeExtension runtimeExtension) {
         final RuntimeExtensionReference rer = new RuntimeExtensionReference(serviceReference, runtimeExtension);
         synchronized (extensions) {
-            final Set<RuntimeExtensionReference> namedExtensions = extensions.computeIfAbsent(rer.getName(), key -> new TreeSet<>());
+            final Set<RuntimeExtensionReference> namedExtensions =
+                    extensions.computeIfAbsent(rer.getName(), key -> new TreeSet<>());
             if (namedExtensions.add(rer)) {
                 mapping = getRuntimeExtensions();
             }
@@ -81,6 +82,4 @@ public class ExtensionRegistryService {
         }
         return Collections.unmodifiableMap(replacement);
     }
-
-
 }

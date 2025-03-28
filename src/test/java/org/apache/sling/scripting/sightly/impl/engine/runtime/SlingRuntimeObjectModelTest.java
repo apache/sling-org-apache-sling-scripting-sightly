@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine.runtime;
 
 import java.util.Arrays;
@@ -30,7 +30,6 @@ import java.util.Optional;
 import org.apache.sling.api.adapter.Adaptable;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.api.wrappers.ValueMapDecorator;
-import org.apache.sling.scripting.sightly.render.ObjectModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -45,19 +44,25 @@ public class SlingRuntimeObjectModelTest {
 
     @Test
     public void getPropertyFromAdaptableWithField() {
-        assertEquals("Expected public fields to have priority over ValueMap adaptable's properties.", FieldTestMockAdaptable.test,
+        assertEquals(
+                "Expected public fields to have priority over ValueMap adaptable's properties.",
+                FieldTestMockAdaptable.test,
                 slingRuntimeObjectModel.getProperty(new FieldTestMockAdaptable(), "test"));
     }
 
     @Test
     public void getPropertyFromAdaptableWithMethod() {
-        assertEquals("Expected public methods to have priority over ValueMap adaptable's properties.", METHOD_VALUE,
+        assertEquals(
+                "Expected public methods to have priority over ValueMap adaptable's properties.",
+                METHOD_VALUE,
                 slingRuntimeObjectModel.getProperty(new MethodTestMockAdaptable(), "test"));
     }
 
     @Test
     public void getPropertyFromAdaptable() {
-        assertEquals("Expected to solve property from ValueMap returned by an adaptable.", VALUE_MAP_VALUE,
+        assertEquals(
+                "Expected to solve property from ValueMap returned by an adaptable.",
+                VALUE_MAP_VALUE,
                 slingRuntimeObjectModel.getProperty(new AdaptableTestMock(), "test"));
     }
 
@@ -89,19 +94,21 @@ public class SlingRuntimeObjectModelTest {
         List testList = Arrays.asList(testArray);
         assertTrue(runtimeObjectModel.toBoolean(testArray));
         assertTrue(runtimeObjectModel.toBoolean(testPrimitiveArray));
-        assertFalse(runtimeObjectModel.toBoolean(new Integer[]{}));
+        assertFalse(runtimeObjectModel.toBoolean(new Integer[] {}));
         assertTrue(runtimeObjectModel.toBoolean(testList));
         assertFalse(runtimeObjectModel.toBoolean(Collections.emptyList()));
-        Map<String, Integer> map = new HashMap<String, Integer>() {{
-            put("one", 1);
-            put("two", 2);
-        }};
+        Map<String, Integer> map = new HashMap<String, Integer>() {
+            {
+                put("one", 1);
+                put("two", 2);
+            }
+        };
         assertTrue(runtimeObjectModel.toBoolean(map));
         assertFalse(runtimeObjectModel.toBoolean(Collections.EMPTY_MAP));
         assertTrue(runtimeObjectModel.toBoolean(testList.iterator()));
         assertFalse(runtimeObjectModel.toBoolean(Collections.EMPTY_LIST.iterator()));
         assertTrue(runtimeObjectModel.toBoolean(new Bag<>(testArray)));
-        assertFalse(runtimeObjectModel.toBoolean(new Bag<>(new Integer[]{})));
+        assertFalse(runtimeObjectModel.toBoolean(new Bag<>(new Integer[] {})));
         assertTrue(runtimeObjectModel.toBoolean(new Date()));
 
         assertFalse(runtimeObjectModel.toBoolean(Optional.empty()));
@@ -144,19 +151,21 @@ public class SlingRuntimeObjectModelTest {
         List testList = Arrays.asList(testArray);
         assertTrue(runtimeObjectModel.toBoolean(testArray));
         assertTrue(runtimeObjectModel.toBoolean(testPrimitiveArray));
-        assertFalse(runtimeObjectModel.toBoolean(new Integer[]{}));
+        assertFalse(runtimeObjectModel.toBoolean(new Integer[] {}));
         assertTrue(runtimeObjectModel.toBoolean(testList));
         assertFalse(runtimeObjectModel.toBoolean(Collections.emptyList()));
-        Map<String, Integer> map = new HashMap<String, Integer>() {{
-            put("one", 1);
-            put("two", 2);
-        }};
+        Map<String, Integer> map = new HashMap<String, Integer>() {
+            {
+                put("one", 1);
+                put("two", 2);
+            }
+        };
         assertTrue(runtimeObjectModel.toBoolean(map));
         assertFalse(runtimeObjectModel.toBoolean(Collections.EMPTY_MAP));
         assertTrue(runtimeObjectModel.toBoolean(testList.iterator()));
         assertFalse(runtimeObjectModel.toBoolean(Collections.EMPTY_LIST.iterator()));
         assertTrue(runtimeObjectModel.toBoolean(new Bag<>(testArray)));
-        assertFalse(runtimeObjectModel.toBoolean(new Bag<>(new Integer[]{})));
+        assertFalse(runtimeObjectModel.toBoolean(new Bag<>(new Integer[] {})));
         assertTrue(runtimeObjectModel.toBoolean(new Date()));
 
         assertFalse(runtimeObjectModel.toBoolean(Optional.empty()));
@@ -181,9 +190,11 @@ public class SlingRuntimeObjectModelTest {
     private abstract class MockAdaptable implements Adaptable {
 
         ValueMap getValueMap() {
-            return new ValueMapDecorator(new HashMap<String, Object>() {{
-                put("test", VALUE_MAP_VALUE);
-            }});
+            return new ValueMapDecorator(new HashMap<String, Object>() {
+                {
+                    put("test", VALUE_MAP_VALUE);
+                }
+            });
         }
 
         @Nullable
@@ -199,7 +210,6 @@ public class SlingRuntimeObjectModelTest {
     public class FieldTestMockAdaptable extends MockAdaptable {
 
         public static final String test = "Field value";
-
     }
 
     public class MethodTestMockAdaptable extends MockAdaptable {
@@ -235,11 +245,8 @@ public class SlingRuntimeObjectModelTest {
                 }
 
                 @Override
-                public void remove() {
-
-                }
+                public void remove() {}
             };
         }
     }
-
 }
