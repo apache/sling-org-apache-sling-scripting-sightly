@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine.extension;
 
 import java.io.UnsupportedEncodingException;
@@ -41,10 +41,7 @@ import org.slf4j.LoggerFactory;
 
 @Component(
         service = RuntimeExtension.class,
-        property = {
-                RuntimeExtension.NAME + "=" + RuntimeExtension.URI_MANIPULATION
-        }
-)
+        property = {RuntimeExtension.NAME + "=" + RuntimeExtension.URI_MANIPULATION})
 public class URIManipulationFilterExtension implements RuntimeExtension {
 
     public static final String SCHEME = "scheme";
@@ -96,12 +93,13 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
                     throw e;
                 }
                 final String host = getOption(DOMAIN, options, originalUri.getHost(), true);
-                final String path = getPath(runtimeObjectModel, originalUri.getPath(), options, scheme != null || host != null);
+                final String path =
+                        getPath(runtimeObjectModel, originalUri.getPath(), options, scheme != null || host != null);
                 final String escapedQuery = getEscapedQuery(runtimeObjectModel, originalUri.getRawQuery(), options);
 
                 // the URI constructor will escape the % in the query part again, we must revert that
-                transformedUri = new URI(scheme, originalUri.getUserInfo(), host, originalUri.getPort(), path, escapedQuery,
-                        fragment);
+                transformedUri = new URI(
+                        scheme, originalUri.getUserInfo(), host, originalUri.getPort(), path, escapedQuery, fragment);
                 return unescapePercentInQuery(transformedUri.toString());
             }
         } catch (URISyntaxException e) {
@@ -164,7 +162,9 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
         StringBuilder sb = new StringBuilder();
         for (String pathPart : pathParts) {
             if (StringUtils.isNotBlank(pathPart)) {
-                if (sb.length() > 0 && !pathPart.startsWith("/") && !sb.toString().endsWith("/")) {
+                if (sb.length() > 0
+                        && !pathPart.startsWith("/")
+                        && !sb.toString().endsWith("/")) {
                     sb.append("/");
                 }
                 if (sb.toString().endsWith("/") && pathPart.startsWith("/")) {
@@ -177,11 +177,20 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
         return sb.toString();
     }
 
-    private String getPath(RuntimeObjectModel runtimeObjectModel, String originalPath, Map<String, Object> options, boolean isAbsolute) {
-        SlingUriBuilder requestPathInfo = StringUtils.isBlank(originalPath) ? SlingUriBuilder.create() : SlingUriBuilder.parse(originalPath, null);
+    private String getPath(
+            RuntimeObjectModel runtimeObjectModel,
+            String originalPath,
+            Map<String, Object> options,
+            boolean isAbsolute) {
+        SlingUriBuilder requestPathInfo = StringUtils.isBlank(originalPath)
+                ? SlingUriBuilder.create()
+                : SlingUriBuilder.parse(originalPath, null);
         final String prependPath = getOption(PREPEND_PATH, options, StringUtils.EMPTY, true);
-        final String path =
-                getOption(PATH, options, requestPathInfo.getResourcePath(), true); // empty path option should not remove existing path!
+        final String path = getOption(
+                PATH,
+                options,
+                requestPathInfo.getResourcePath(),
+                true); // empty path option should not remove existing path!
         final String appendPath = getOption(APPEND_PATH, options, StringUtils.EMPTY, true);
         if (!options.containsKey(PATH) && StringUtils.isEmpty(path)) {
             // no not prepend/append if path is neither set initially nor through option
@@ -223,7 +232,8 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
         return requestPathInfo.build().toString();
     }
 
-    private String getEscapedQuery(RuntimeObjectModel runtimeObjectModel, String originalQuery, Map<String, Object> options) {
+    private String getEscapedQuery(
+            RuntimeObjectModel runtimeObjectModel, String originalQuery, Map<String, Object> options) {
         // parse parameters
         Map<String, Collection<String>> parameters = new LinkedHashMap<>();
         if (StringUtils.isNotEmpty(originalQuery)) {
@@ -261,8 +271,10 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
                     StringBuilder sb = new StringBuilder();
                     for (Map.Entry<String, Collection<String>> entry : parameters.entrySet()) {
                         for (String value : entry.getValue()) {
-                            sb.append(URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8.name())).append("=")
-                                    .append(URLEncoder.encode(value, StandardCharsets.UTF_8.name())).append("&");
+                            sb.append(URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8.name()))
+                                    .append("=")
+                                    .append(URLEncoder.encode(value, StandardCharsets.UTF_8.name()))
+                                    .append("&");
                         }
                     }
                     // delete the last &
@@ -278,8 +290,8 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
         return originalQuery;
     }
 
-    void handleSelectors(RuntimeObjectModel runtimeObjectModel, SlingUriBuilder requestPathInfo,
-                                Map<String, Object> options) {
+    void handleSelectors(
+            RuntimeObjectModel runtimeObjectModel, SlingUriBuilder requestPathInfo, Map<String, Object> options) {
         if (options.containsKey(SELECTORS)) {
             Object selectorsOption = options.get(SELECTORS);
             if (selectorsOption == null) {
@@ -287,11 +299,11 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
                 requestPathInfo.setSelectors(null);
             } else if (selectorsOption instanceof String) {
                 String selectorString = (String) selectorsOption;
-                if ( StringUtils.isBlank(selectorString) ) {
+                if (StringUtils.isBlank(selectorString)) {
                     requestPathInfo.setSelectors(null);
                 } else {
                     String[] selectorsArray = selectorString.split("\\.");
-                    requestPathInfo.setSelectors(selectorsArray);    
+                    requestPathInfo.setSelectors(selectorsArray);
                 }
             } else if (selectorsOption instanceof Object[]) {
                 Object[] selectorsURIArray = (Object[]) selectorsOption;
@@ -307,7 +319,7 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
         if (addSelectorsOption instanceof String) {
             String selectorString = (String) addSelectorsOption;
             String[] selectorsArray = selectorString.split("\\.");
-            for(String selector : selectorsArray) {
+            for (String selector : selectorsArray) {
                 requestPathInfo.addSelector(selector);
             }
         } else if (addSelectorsOption instanceof Object[]) {
@@ -320,7 +332,7 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
         if (removeSelectorsOption instanceof String) {
             String selectorString = (String) removeSelectorsOption;
             String[] selectorsArray = selectorString.split("\\.");
-            for(String selector : selectorsArray) {
+            for (String selector : selectorsArray) {
                 requestPathInfo.removeSelector(selector);
             }
         } else if (removeSelectorsOption instanceof Object[]) {
@@ -332,8 +344,10 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
     }
 
     @SuppressWarnings("unchecked")
-    private boolean handleParameters(RuntimeObjectModel runtimeObjectModel, Map<String, Collection<String>> parameters,
-                                     Map<String, Object> options) {
+    private boolean handleParameters(
+            RuntimeObjectModel runtimeObjectModel,
+            Map<String, Collection<String>> parameters,
+            Map<String, Object> options) {
         boolean hasModifiedParameters = false;
         if (options.containsKey(QUERY)) {
             Object queryOption = options.get(QUERY);
@@ -366,8 +380,10 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
         return hasModifiedParameters;
     }
 
-    private void addQueryParameters(RuntimeObjectModel runtimeObjectModel, Map<String, Collection<String>> parameters,
-                                    Map<String, Object> queryParameters) {
+    private void addQueryParameters(
+            RuntimeObjectModel runtimeObjectModel,
+            Map<String, Collection<String>> parameters,
+            Map<String, Object> queryParameters) {
         for (Map.Entry<String, Object> entry : queryParameters.entrySet()) {
             Object entryValue = entry.getValue();
             if (runtimeObjectModel.isCollection(entryValue)) {
@@ -384,7 +400,4 @@ public class URIManipulationFilterExtension implements RuntimeExtension {
             }
         }
     }
-
-
-
 }

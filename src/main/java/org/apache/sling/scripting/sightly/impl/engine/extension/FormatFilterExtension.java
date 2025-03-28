@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine.extension;
 
 import java.text.DecimalFormat;
@@ -31,6 +31,7 @@ import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.ibm.icu.text.MessageFormat;
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.scripting.sightly.SightlyException;
@@ -41,14 +42,9 @@ import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ibm.icu.text.MessageFormat;
-
 @Component(
         service = RuntimeExtension.class,
-        property = {
-                RuntimeExtension.NAME + "=" + RuntimeExtension.FORMAT
-        }
-)
+        property = {RuntimeExtension.NAME + "=" + RuntimeExtension.FORMAT})
 public class FormatFilterExtension implements RuntimeExtension {
 
     protected static final String FORMAT_OPTION = "format";
@@ -75,12 +71,15 @@ public class FormatFilterExtension implements RuntimeExtension {
 
         String formattingType = runtimeObjectModel.toString(options.get(TYPE_OPTION));
         Object formatObject = options.get(FORMAT_OPTION);
-        boolean hasPlaceHolders = PLACEHOLDER_REGEX.matcher(source).find() || COMPLEX_PLACEHOLDER_REGEX.matcher(source).find();
+        boolean hasPlaceHolders = PLACEHOLDER_REGEX.matcher(source).find()
+                || COMPLEX_PLACEHOLDER_REGEX.matcher(source).find();
         if (STRING_FORMAT_TYPE.equals(formattingType)) {
             return getFormattedString(runtimeObjectModel, source, options, formatObject);
-        } else if (DATE_FORMAT_TYPE.equals(formattingType) || (!hasPlaceHolders && runtimeObjectModel.isDate(formatObject))) {
+        } else if (DATE_FORMAT_TYPE.equals(formattingType)
+                || (!hasPlaceHolders && runtimeObjectModel.isDate(formatObject))) {
             return getDateFormattedString(runtimeObjectModel, source, options, formatObject);
-        } else if (NUMBER_FORMAT_TYPE.equals(formattingType) || (!hasPlaceHolders && runtimeObjectModel.isNumber(formatObject))) {
+        } else if (NUMBER_FORMAT_TYPE.equals(formattingType)
+                || (!hasPlaceHolders && runtimeObjectModel.isNumber(formatObject))) {
             return getNumberFormattedString(runtimeObjectModel, source, options, formatObject);
         }
         if (hasPlaceHolders) {
@@ -103,8 +102,8 @@ public class FormatFilterExtension implements RuntimeExtension {
         return getFormattedString(runtimeObjectModel, source, options, formatObject);
     }
 
-    private Object getFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options,
-                                      Object formatObject) {
+    private Object getFormattedString(
+            RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options, Object formatObject) {
         Object[] params = decodeParams(runtimeObjectModel, formatObject);
         if (COMPLEX_PLACEHOLDER_REGEX.matcher(source).find()) {
             if (hasIcuSupport) {
@@ -118,14 +117,14 @@ public class FormatFilterExtension implements RuntimeExtension {
         }
     }
 
-    private String getNumberFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options,
-                                            Object formatObject) {
+    private String getNumberFormattedString(
+            RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options, Object formatObject) {
         Locale locale = getLocale(runtimeObjectModel, options);
         return formatNumber(source, runtimeObjectModel.toNumber(formatObject), locale);
     }
 
-    private String getDateFormattedString(RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options,
-                                          Object formatObject) {
+    private String getDateFormattedString(
+            RuntimeObjectModel runtimeObjectModel, String source, Map<String, Object> options, Object formatObject) {
         Locale locale = getLocale(runtimeObjectModel, options);
         TimeZone timezone = getTimezone(runtimeObjectModel, options);
         return formatDate(source, runtimeObjectModel.toDate(formatObject), locale, timezone);
@@ -143,12 +142,12 @@ public class FormatFilterExtension implements RuntimeExtension {
     }
 
     private TimeZone getTimezone(RuntimeObjectModel runtimeObjectModel, Map<String, Object> options) {
-        if ( options.containsKey(TIMEZONE_OPTION)) {
+        if (options.containsKey(TIMEZONE_OPTION)) {
             return TimeZone.getTimeZone(runtimeObjectModel.toString(options.get(TIMEZONE_OPTION)));
         } else {
             Object formatObject = options.get(FORMAT_OPTION);
             if (formatObject instanceof Calendar) {
-                return ((Calendar)formatObject).getTimeZone();
+                return ((Calendar) formatObject).getTimeZone();
             }
             return TimeZone.getDefault();
         }
@@ -186,7 +185,8 @@ public class FormatFilterExtension implements RuntimeExtension {
 
     private String formatStringIcu(String source, Locale locale, Object[] params) {
         try {
-            MessageFormat messageFormat = locale != null ? new MessageFormat(source, locale) : new MessageFormat(source);
+            MessageFormat messageFormat =
+                    locale != null ? new MessageFormat(source, locale) : new MessageFormat(source);
             return messageFormat.format(params);
         } catch (NoClassDefFoundError ex) {
             LOG.trace("ICU4J not found", ex);
@@ -233,7 +233,7 @@ public class FormatFilterExtension implements RuntimeExtension {
                 }
             } else {
                 // escape reserved characters, that are allowed according to the htl-tck
-                format =  format.replaceAll("([{}#])", "'$1'");
+                format = format.replaceAll("([{}#])", "'$1'");
                 // normalized text narrow form to full form to be compatible with java.text.SimpleDateFormat
                 // for example EEEEE becomes EEEE
                 format = format.replaceAll("([GMLQqEec])\\1{4}", "$1$1$1$1");
@@ -245,8 +245,10 @@ public class FormatFilterExtension implements RuntimeExtension {
             }
             return formatter.format(timezone != null ? date.toInstant().atZone(timezone.toZoneId()) : date.toInstant());
         } catch (Exception e) {
-            String error = String.format("Error during formatting of date %s with format %s, locale %s and timezone %s", date, format, locale, timezone);
-            throw new SightlyException( error, e);
+            String error = String.format(
+                    "Error during formatting of date %s with format %s, locale %s and timezone %s",
+                    date, format, locale, timezone);
+            throw new SightlyException(error, e);
         }
     }
 
@@ -263,8 +265,9 @@ public class FormatFilterExtension implements RuntimeExtension {
             }
             return formatter.format(number);
         } catch (Exception e) {
-            String error = String.format("Error during formatting of number %s with format %s and locale %s", number, format, locale);
-            throw new SightlyException( error, e);
+            String error = String.format(
+                    "Error during formatting of number %s with format %s and locale %s", number, format, locale);
+            throw new SightlyException(error, e);
         }
     }
 }

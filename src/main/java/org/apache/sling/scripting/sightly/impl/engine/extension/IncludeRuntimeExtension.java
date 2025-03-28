@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,15 +15,15 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine.extension;
+
+import javax.script.Bindings;
+import javax.servlet.Servlet;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Map;
-
-import javax.script.Bindings;
-import javax.servlet.Servlet;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
@@ -44,10 +44,7 @@ import org.slf4j.LoggerFactory;
  */
 @Component(
         service = RuntimeExtension.class,
-        property = {
-                RuntimeExtension.NAME + "=" + RuntimeExtension.INCLUDE
-        }
-)
+        property = {RuntimeExtension.NAME + "=" + RuntimeExtension.INCLUDE})
 public class IncludeRuntimeExtension implements RuntimeExtension {
 
     private static final Logger LOG = LoggerFactory.getLogger(IncludeRuntimeExtension.class);
@@ -55,7 +52,6 @@ public class IncludeRuntimeExtension implements RuntimeExtension {
     private static final String OPTION_PREPEND_PATH = "prependPath";
     private static final String OPTION_APPEND_PATH = "appendPath";
     private static final String OPTION_REQUEST_ATTRIBUTES = "requestAttributes";
-
 
     @Override
     public Object call(final RenderContext renderContext, Object... arguments) {
@@ -67,11 +63,11 @@ public class IncludeRuntimeExtension implements RuntimeExtension {
         StringWriter output = new StringWriter();
         final Bindings bindings = renderContext.getBindings();
         SlingHttpServletRequest request = BindingsUtils.getRequest(bindings);
-        Map originalAttributes = ExtensionUtils.setRequestAttributes(request, (Map)options.remove(OPTION_REQUEST_ATTRIBUTES));
+        Map originalAttributes =
+                ExtensionUtils.setRequestAttributes(request, (Map) options.remove(OPTION_REQUEST_ATTRIBUTES));
         includeScript(bindings, path, new PrintWriter(output));
         ExtensionUtils.setRequestAttributes(request, originalAttributes);
         return output.toString();
-
     }
 
     private String buildPath(String path, Map options) {

@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine.extension;
 
 import java.util.HashMap;
@@ -39,10 +39,7 @@ import org.slf4j.LoggerFactory;
  */
 @Component(
         service = RuntimeExtension.class,
-        property = {
-                RuntimeExtension.NAME + "=" + RuntimeExtension.XSS
-        }
-)
+        property = {RuntimeExtension.NAME + "=" + RuntimeExtension.XSS})
 public class XSSRuntimeExtension implements RuntimeExtension {
 
     @Reference
@@ -137,13 +134,13 @@ public class XSSRuntimeExtension implements RuntimeExtension {
             case HTML:
                 return xssApi.filterHTML(text);
         }
-        return text; //todo: apply the rest of XSS filters
+        return text; // todo: apply the rest of XSS filters
     }
 
     // TODO: move to XssApi
     /**
      * Escapes a given text so that it is compliant with the grammar for JSON strings as specified in ECMA-404.
-     * 
+     *
      * @param text the text to escape
      * @return the escaped text for using it inside a JSON string (excluding the surrounding quotes)
      * @see <a href="https://www.ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf">ECMA-404: The JSON Data Interchange Syntax</a>
@@ -253,7 +250,6 @@ public class XSSRuntimeExtension implements RuntimeExtension {
     }
 
     private enum MarkupContext {
-
         HTML("html"),
         TEXT("text"),
         ELEMENT_NAME("elementName"),
@@ -300,5 +296,4 @@ public class XSSRuntimeExtension implements RuntimeExtension {
             }
         }
     }
-
 }

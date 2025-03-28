@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,8 +15,7 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
-
+ */
 package org.apache.sling.scripting.sightly.impl.engine;
 
 import java.io.IOException;
@@ -39,47 +38,40 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
  */
 @Component(
         service = SightlyEngineConfiguration.class,
-        configurationPid = "org.apache.sling.scripting.sightly.impl.engine.SightlyEngineConfiguration"
-)
-@Designate(
-        ocd = SightlyEngineConfiguration.Configuration.class
-)
+        configurationPid = "org.apache.sling.scripting.sightly.impl.engine.SightlyEngineConfiguration")
+@Designate(ocd = SightlyEngineConfiguration.Configuration.class)
 public class SightlyEngineConfiguration {
 
-    @ObjectClassDefinition(
-            name = "Apache Sling Scripting HTL Engine Configuration"
-    )
+    @ObjectClassDefinition(name = "Apache Sling Scripting HTL Engine Configuration")
     @interface Configuration {
 
         @AttributeDefinition(
                 name = "Keep Generated Java Source Code",
-                description = "If enabled, the Java source code generated during HTL template files compilation will be stored. " +
-                        "Its location is dependent on the available org.apache.sling.commons.classloader.ClassLoaderWriter."
-
-        )
+                description =
+                        "If enabled, the Java source code generated during HTL template files compilation will be stored. "
+                                + "Its location is dependent on the available org.apache.sling.commons.classloader.ClassLoaderWriter.")
         boolean keepGenerated() default true;
 
         @AttributeDefinition(
                 name = "Known Expression Options",
-                description = "A list of extra expression options that should be ignored by the HTL compiler when reporting unknown options."
-        )
+                description =
+                        "A list of extra expression options that should be ignored by the HTL compiler when reporting unknown options.")
         String[] allowedExpressionOptions();
 
         @AttributeDefinition(
                 name = "Legacy boolean casting",
-                description = "When the legacy boolean casting is enabled, the string 'false', irrespective of its casing, will be casted" +
-                        " to the Boolean false. So will objects whose implementation of the toString() method returns the string 'false'." +
-                        " This is a violation of the HTL specification, but the HTL implementation worked like this from its inception."
-        )
+                description =
+                        "When the legacy boolean casting is enabled, the string 'false', irrespective of its casing, will be casted"
+                                + " to the Boolean false. So will objects whose implementation of the toString() method returns the string 'false'."
+                                + " This is a violation of the HTL specification, but the HTL implementation worked like this from its inception.")
         boolean legacyBooleanCasting() default true;
 
         @AttributeDefinition(
                 name = "Script Resolution Cache Size",
-                description = "The Script Resolution Cache allows caching script dependencies resolution based on the the script caller, " +
-                        "reducing the number of resource tree lookups. A value lower than 1024 disables the cache."
-        )
+                description =
+                        "The Script Resolution Cache allows caching script dependencies resolution based on the the script caller, "
+                                + "reducing the number of resource tree lookups. A value lower than 1024 disables the cache.")
         int scriptResolutionCacheSize() default 0;
-
     }
 
     private String engineVersion = "0";

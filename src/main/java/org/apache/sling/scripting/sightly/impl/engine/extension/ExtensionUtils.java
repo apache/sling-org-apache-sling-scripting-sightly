@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine.extension;
 
 import java.util.LinkedHashMap;
@@ -51,7 +51,8 @@ public class ExtensionUtils {
      * @param newRequestAttributes the {@link Map} of attributes to set
      * @return A {@link Map} of original attributes values for substituted keys
      */
-    public static Map<String, Object> setRequestAttributes(SlingHttpServletRequest request, Map<String, Object> newRequestAttributes) {
+    public static Map<String, Object> setRequestAttributes(
+            SlingHttpServletRequest request, Map<String, Object> newRequestAttributes) {
         Map<String, Object> originalRequestAttributes = new LinkedHashMap<String, Object>();
         if (newRequestAttributes != null && request != null) {
             for (Map.Entry<String, Object> attr : newRequestAttributes.entrySet()) {
@@ -67,5 +68,4 @@ public class ExtensionUtils {
         }
         return originalRequestAttributes;
     }
-
 }

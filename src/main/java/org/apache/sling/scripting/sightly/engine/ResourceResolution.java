@@ -1,20 +1,21 @@
-/*******************************************************************************
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- ******************************************************************************/
-
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.sling.scripting.sightly.engine;
 
 import javax.servlet.Servlet;
@@ -137,9 +138,9 @@ public final class ResourceResolution {
                 return null;
             }
         }
-        //at this point we have reached recursion limit
-        throw new IllegalStateException("Searching for resource in component chain took more than " +
-                RECURSION_LIMIT + " steps");
+        // at this point we have reached recursion limit
+        throw new IllegalStateException(
+                "Searching for resource in component chain took more than " + RECURSION_LIMIT + " steps");
     }
 
     private static Resource locateInSearchPath(ResourceResolver resourceResolver, String path) {
@@ -147,7 +148,7 @@ public final class ResourceResolution {
             String fullPath = ResourceUtil.normalize(searchPath + path);
             if (fullPath != null) {
                 Resource resource = resourceResolver.getResource(fullPath);
-                if (resource != null && resource.getPath().startsWith(searchPath)) { //prevent path traversal attack
+                if (resource != null && resource.getPath().startsWith(searchPath)) { // prevent path traversal attack
                     return resource;
                 }
             }
@@ -177,26 +178,26 @@ public final class ResourceResolution {
 
     private static Resource searchPathChecked(Resource resource) {
         if (!isInSearchPath(resource)) {
-            throw new UnsupportedOperationException("Access to resource " + resource.getPath() + " is denied, since the resource does not" +
-                    " reside on the search path");
+            throw new UnsupportedOperationException("Access to resource " + resource.getPath()
+                    + " is denied, since the resource does not" + " reside on the search path");
         }
         return resource;
     }
 
     private static Resource getScriptResource(@NotNull ResourceResolver resourceResolver, @NotNull String path) {
-         if (path.startsWith("/")) {
-             return resourceResolver.getResource(path);
-         } else {
-             for (String searchPath : resourceResolver.getSearchPath()) {
-                 String resourcePath = ResourceUtil.normalize(searchPath + path);
-                 if (resourcePath != null) {
-                     Resource resource = resourceResolver.getResource(resourcePath);
-                     if (resource != null) {
-                         return resource;
-                     }
-                 }
-             }
-         }
-         return null;
+        if (path.startsWith("/")) {
+            return resourceResolver.getResource(path);
+        } else {
+            for (String searchPath : resourceResolver.getSearchPath()) {
+                String resourcePath = ResourceUtil.normalize(searchPath + path);
+                if (resourcePath != null) {
+                    Resource resource = resourceResolver.getResource(resourcePath);
+                    if (resource != null) {
+                        return resource;
+                    }
+                }
+            }
+        }
+        return null;
     }
 }

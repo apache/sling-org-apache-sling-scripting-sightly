@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine;
 
 import javax.script.ScriptEngine;
@@ -37,16 +37,18 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
 @Component(
         service = ScriptEngineFactory.class,
         property = {
-                "extensions=html",
-                "names=htl",
-                "names=HTL",
-                Constants.SERVICE_DESCRIPTION + "=HTL Templating Engine",
-                "compatible.javax.script.name=sly"
-        }
-)
+            "extensions=html",
+            "names=htl",
+            "names=HTL",
+            Constants.SERVICE_DESCRIPTION + "=HTL Templating Engine",
+            "compatible.javax.script.name=sly"
+        })
 public class SightlyScriptEngineFactory extends AbstractScriptEngineFactory {
 
-    @Reference(cardinality = ReferenceCardinality.OPTIONAL, policy = ReferencePolicy.DYNAMIC, policyOption=ReferencePolicyOption.GREEDY)
+    @Reference(
+            cardinality = ReferenceCardinality.OPTIONAL,
+            policy = ReferencePolicy.DYNAMIC,
+            policyOption = ReferencePolicyOption.GREEDY)
     private volatile SlingHTLMasterCompiler slingHTLMasterCompiler;
 
     @Reference
@@ -58,11 +60,11 @@ public class SightlyScriptEngineFactory extends AbstractScriptEngineFactory {
     @Reference
     private SightlyEngineConfiguration configuration;
 
-    public final static String SHORT_NAME = "sightly";
-    public final static String EXTENSION = "html";
+    public static final String SHORT_NAME = "sightly";
+    public static final String EXTENSION = "html";
 
-    private final static String LANGUAGE_NAME = "The HTL Templating Language";
-    private final static String LANGUAGE_VERSION = "1.4";
+    private static final String LANGUAGE_NAME = "The HTL Templating Language";
+    private static final String LANGUAGE_VERSION = "1.4";
 
     public SightlyScriptEngineFactory() {
         setNames("htl", "HTL", SHORT_NAME);

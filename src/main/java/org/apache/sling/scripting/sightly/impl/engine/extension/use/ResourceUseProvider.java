@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine.extension.use;
 
 import javax.script.Bindings;
@@ -30,25 +30,20 @@ import org.apache.sling.scripting.sightly.use.UseProvider;
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
-import org.osgi.service.metatype.annotations.Designate;
-import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @Component(
         service = UseProvider.class,
         configurationPid = "org.apache.sling.scripting.sightly.impl.engine.extension.use.ResourceUseProvider",
-        property = {
-                Constants.SERVICE_RANKING + ":Integer=-10"
-        }
-)
+        property = {Constants.SERVICE_RANKING + ":Integer=-10"})
 public class ResourceUseProvider implements UseProvider {
 
     @interface Configuration {
 
         @AttributeDefinition(
                 name = "Service Ranking",
-                description = "The Service Ranking value acts as the priority with which this Use Provider is queried to return an " +
-                        "Use-object. A higher value represents a higher priority."
-        )
+                description =
+                        "The Service Ranking value acts as the priority with which this Use Provider is queried to return an "
+                                + "Use-object. A higher value represents a higher priority.")
         int service_ranking() default -10;
     }
 

@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,16 +15,16 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine.extension.use;
+
+import javax.script.Bindings;
+import javax.servlet.ServletRequest;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.script.Bindings;
-import javax.servlet.ServletRequest;
 
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.adapter.Adaptable;
@@ -54,21 +54,17 @@ import org.slf4j.LoggerFactory;
 @Component(
         service = UseProvider.class,
         configurationPid = "org.apache.sling.scripting.sightly.impl.engine.extension.use.JavaUseProvider",
-        property = {
-                Constants.SERVICE_RANKING + ":Integer=90"
-        }
-)
+        property = {Constants.SERVICE_RANKING + ":Integer=90"})
 public class JavaUseProvider implements UseProvider {
 
     @interface Configuration {
 
         @AttributeDefinition(
                 name = "Service Ranking",
-                description = "The Service Ranking value acts as the priority with which this Use Provider is queried to return an " +
-                        "Use-object. A higher value represents a higher priority."
-        )
+                description =
+                        "The Service Ranking value acts as the priority with which this Use Provider is queried to return an "
+                                + "Use-object. A higher value represents a higher priority.")
         int service_ranking() default 90;
-
     }
 
     private static final String ADAPTABLE = "adaptable";
@@ -80,7 +76,10 @@ public class JavaUseProvider implements UseProvider {
     @Reference
     private BundledUnitManagerImpl bundledUnitManager;
 
-    @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY, service = ModelFactory.class)
+    @Reference(
+            cardinality = ReferenceCardinality.OPTIONAL,
+            policyOption = ReferencePolicyOption.GREEDY,
+            service = ModelFactory.class)
     private Object modelFactory;
 
     @Override
@@ -100,14 +99,17 @@ public class JavaUseProvider implements UseProvider {
                 try {
                     String className = identifier;
                     if (className.indexOf('.') < 0) {
-                        // the class name is not fully qualified; need to prepend the package name of the current rendering unit
+                        // the class name is not fully qualified; need to prepend the package name of the current
+                        // rendering unit
                         RenderUnit renderUnit = bundledUnitManager.getRenderUnit(globalBindings);
                         if (renderUnit != null) {
                             className = renderUnit.getClass().getPackage().getName() + "." + className;
                         }
                     }
                     Class<?> clazz = unitClassLoader.loadClass(className);
-                    return loadObject(clazz, cls -> bundledUnitManager.getServiceForBundledRenderUnit(globalBindings, clazz),
+                    return loadObject(
+                            clazz,
+                            cls -> bundledUnitManager.getServiceForBundledRenderUnit(globalBindings, clazz),
                             globalBindings,
                             arguments);
                 } catch (Exception e) {
@@ -126,14 +128,14 @@ public class JavaUseProvider implements UseProvider {
                     SlingScriptHelper slingScriptHelper = BindingsUtils.getHelper(globalBindings);
                     if (slingScriptHelper != null) {
                         try {
-                            Class<?> clazz = slingHTLMasterCompiler.getClassLoader().loadClass(identifier);
+                            Class<?> clazz =
+                                    slingHTLMasterCompiler.getClassLoader().loadClass(identifier);
                             return loadObject(clazz, slingScriptHelper::getService, globalBindings, arguments);
                         } catch (Exception e) {
                             failure = e;
                         }
                     }
                 }
-
             }
             if (failure != null) {
                 return ProviderOutcome.failure(failure);
@@ -147,87 +149,90 @@ public class JavaUseProvider implements UseProvider {
         }
     }
 
-    private ProviderOutcome loadObject(@NotNull Class<?> cls, @NotNull ServiceLoader serviceLoader, @NotNull Bindings globalBindings,
-                                       @NotNull Bindings arguments)
-            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
-            InstantiationException {
-            // OSGi service
-            Object serviceResult = serviceLoader.getService(cls);
-            if (serviceResult != null) {
-                return ProviderOutcome.success(serviceResult);
-            }
-            // adaptable
-            Object adaptableCandidate = arguments.get(ADAPTABLE);
-            Adaptable adaptable = null;
+    private ProviderOutcome loadObject(
+            @NotNull Class<?> cls,
+            @NotNull ServiceLoader serviceLoader,
+            @NotNull Bindings globalBindings,
+            @NotNull Bindings arguments)
+            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        // OSGi service
+        Object serviceResult = serviceLoader.getService(cls);
+        if (serviceResult != null) {
+            return ProviderOutcome.success(serviceResult);
+        }
+        // adaptable
+        Object adaptableCandidate = arguments.get(ADAPTABLE);
+        Adaptable adaptable = null;
 
-            if (adaptableCandidate instanceof Adaptable) {
-                adaptable = (Adaptable) adaptableCandidate;
-            } else {
-                LOG.debug("The provided adaptable argument value, was not of type Adaptable");
-            }
+        if (adaptableCandidate instanceof Adaptable) {
+            adaptable = (Adaptable) adaptableCandidate;
+        } else {
+            LOG.debug("The provided adaptable argument value, was not of type Adaptable");
+        }
 
-            SlingHttpServletRequest request = BindingsUtils.getRequest(globalBindings);
-            Resource resource = BindingsUtils.getResource(globalBindings);
-            // Sling Model
-            if (modelFactory != null && ((ModelFactory) modelFactory).isModelClass(cls)) {
-                try {
-                    // Attempt to instantiate via sling models
-                    // first, try to use the provided adaptable
-                    if (adaptable != null && ((ModelFactory) modelFactory).canCreateFromAdaptable(adaptable, cls)) {
-                        LOG.debug("Trying to instantiate class {} as Sling Model from provided adaptable.", cls);
-                        return ProviderOutcome.notNullOrFailure(((ModelFactory) modelFactory).createModel(adaptable, cls));
-                    }
-                    // then, try to use the request
-                    if (request != null && ((ModelFactory) modelFactory).canCreateFromAdaptable(request, cls)) {
-                        LOG.debug("Trying to instantiate class {} as Sling Model from request.", cls);
-                        return ProviderOutcome.notNullOrFailure(((ModelFactory) modelFactory).createModel(request, cls));
-                    }
-                    // finally, try to use the resource
-                    if (resource != null && ((ModelFactory) modelFactory).canCreateFromAdaptable(resource, cls)) {
-                        LOG.debug("Trying to instantiate class {} as Sling Model from resource.", cls);
-                        return ProviderOutcome.notNullOrFailure(((ModelFactory) modelFactory).createModel(resource, cls));
-                    }
-                    return ProviderOutcome.failure(
-                            new IllegalStateException("Could not adapt the given Sling Model from neither request nor resource: " + cls));
-                } catch (Exception e) {
-                    return ProviderOutcome.failure(e);
+        SlingHttpServletRequest request = BindingsUtils.getRequest(globalBindings);
+        Resource resource = BindingsUtils.getResource(globalBindings);
+        // Sling Model
+        if (modelFactory != null && ((ModelFactory) modelFactory).isModelClass(cls)) {
+            try {
+                // Attempt to instantiate via sling models
+                // first, try to use the provided adaptable
+                if (adaptable != null && ((ModelFactory) modelFactory).canCreateFromAdaptable(adaptable, cls)) {
+                    LOG.debug("Trying to instantiate class {} as Sling Model from provided adaptable.", cls);
+                    return ProviderOutcome.notNullOrFailure(((ModelFactory) modelFactory).createModel(adaptable, cls));
                 }
-            }
-
-            Object adaptableResult = null;
-            if (adaptable != null) {
-                LOG.debug("Trying to instantiate class {} as sling adapter via adaptable.adaptTo().", cls);
-                adaptableResult = adaptable.adaptTo(cls);
-            }
-            if (adaptableResult == null && request != null) {
-                LOG.debug("Trying to instantiate class {} as sling adapter via request.adaptTo().", cls);
-                adaptableResult = request.adaptTo(cls);
-            }
-            if (adaptableResult == null && resource != null) {
-                LOG.debug("Trying to instantiate class {} as sling adapter via resource.adaptTo().", cls);
-                adaptableResult = resource.adaptTo(cls);
-            }
-
-            if (adaptableResult != null) {
-                return ProviderOutcome.success(adaptableResult);
-            } else if (cls.isInterface() || Modifier.isAbstract(cls.getModifiers())) {
-                LOG.debug("Won't attempt to instantiate an interface or abstract class {}", cls.getName());
-                return ProviderOutcome.failure(new IllegalArgumentException(String.format(" %s represents an interface or an abstract " +
-                        "class which cannot be instantiated.", cls.getName())));
-            } else if (cls.isEnum()) {
-                // for enum, just return the class
-                return ProviderOutcome.success(cls);
-            } else {
-                /*
-                 * the object was cached by the class loader but it's not adaptable from {@link Resource} or {@link
-                 * SlingHttpServletRequest}; attempt to load it like a regular POJO that optionally could implement {@link Use}
-                 */
-                Object javaUseResult = cls.getDeclaredConstructor().newInstance();
-                if (javaUseResult instanceof Use) {
-                    ((Use) javaUseResult).init(BindingsUtils.merge(globalBindings, arguments));
+                // then, try to use the request
+                if (request != null && ((ModelFactory) modelFactory).canCreateFromAdaptable(request, cls)) {
+                    LOG.debug("Trying to instantiate class {} as Sling Model from request.", cls);
+                    return ProviderOutcome.notNullOrFailure(((ModelFactory) modelFactory).createModel(request, cls));
                 }
-                return ProviderOutcome.notNullOrFailure(javaUseResult);
+                // finally, try to use the resource
+                if (resource != null && ((ModelFactory) modelFactory).canCreateFromAdaptable(resource, cls)) {
+                    LOG.debug("Trying to instantiate class {} as Sling Model from resource.", cls);
+                    return ProviderOutcome.notNullOrFailure(((ModelFactory) modelFactory).createModel(resource, cls));
+                }
+                return ProviderOutcome.failure(new IllegalStateException(
+                        "Could not adapt the given Sling Model from neither request nor resource: " + cls));
+            } catch (Exception e) {
+                return ProviderOutcome.failure(e);
             }
+        }
+
+        Object adaptableResult = null;
+        if (adaptable != null) {
+            LOG.debug("Trying to instantiate class {} as sling adapter via adaptable.adaptTo().", cls);
+            adaptableResult = adaptable.adaptTo(cls);
+        }
+        if (adaptableResult == null && request != null) {
+            LOG.debug("Trying to instantiate class {} as sling adapter via request.adaptTo().", cls);
+            adaptableResult = request.adaptTo(cls);
+        }
+        if (adaptableResult == null && resource != null) {
+            LOG.debug("Trying to instantiate class {} as sling adapter via resource.adaptTo().", cls);
+            adaptableResult = resource.adaptTo(cls);
+        }
+
+        if (adaptableResult != null) {
+            return ProviderOutcome.success(adaptableResult);
+        } else if (cls.isInterface() || Modifier.isAbstract(cls.getModifiers())) {
+            LOG.debug("Won't attempt to instantiate an interface or abstract class {}", cls.getName());
+            return ProviderOutcome.failure(new IllegalArgumentException(String.format(
+                    " %s represents an interface or an abstract " + "class which cannot be instantiated.",
+                    cls.getName())));
+        } else if (cls.isEnum()) {
+            // for enum, just return the class
+            return ProviderOutcome.success(cls);
+        } else {
+            /*
+             * the object was cached by the class loader but it's not adaptable from {@link Resource} or {@link
+             * SlingHttpServletRequest}; attempt to load it like a regular POJO that optionally could implement {@link Use}
+             */
+            Object javaUseResult = cls.getDeclaredConstructor().newInstance();
+            if (javaUseResult instanceof Use) {
+                ((Use) javaUseResult).init(BindingsUtils.merge(globalBindings, arguments));
+            }
+            return ProviderOutcome.notNullOrFailure(javaUseResult);
+        }
     }
 
     private Map<String, Object> setRequestAttributes(ServletRequest request, Bindings arguments) {
@@ -261,6 +266,7 @@ public class JavaUseProvider implements UseProvider {
     private static final Object NULL = new Object();
 
     private interface ServiceLoader {
-        @Nullable Object getService(Class<?> cls);
+        @Nullable
+        Object getService(Class<?> cls);
     }
 }

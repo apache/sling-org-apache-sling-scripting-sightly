@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,15 +15,15 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine.extension;
+
+import javax.script.Bindings;
 
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.script.Bindings;
 
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -40,10 +40,7 @@ import org.slf4j.LoggerFactory;
 
 @Component(
         service = RuntimeExtension.class,
-        property = {
-                RuntimeExtension.NAME + "=" + RuntimeExtension.I18N
-        }
-)
+        property = {RuntimeExtension.NAME + "=" + RuntimeExtension.I18N})
 public class I18nRuntimeExtension implements RuntimeExtension {
 
     private static final Logger LOG = LoggerFactory.getLogger(I18nRuntimeExtension.class);
@@ -107,11 +104,13 @@ public class I18nRuntimeExtension implements RuntimeExtension {
                     LOG.warn("Invalid locale detected: {}.", locale);
                     return text;
                 }
-
             }
         }
-        LOG.warn("No translation found for string '{}' using expression provided locale '{}' or default locale '{}'",
-                text, locale, request.getLocale().getLanguage());
+        LOG.warn(
+                "No translation found for string '{}' using expression provided locale '{}' or default locale '{}'",
+                text,
+                locale,
+                request.getLocale().getLanguage());
         return text;
     }
 

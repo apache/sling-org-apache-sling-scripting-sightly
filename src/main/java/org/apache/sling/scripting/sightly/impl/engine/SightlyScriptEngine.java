@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,17 +15,17 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine;
-
-import java.io.Reader;
-import java.io.StringReader;
 
 import javax.script.Bindings;
 import javax.script.Compilable;
 import javax.script.CompiledScript;
 import javax.script.ScriptContext;
 import javax.script.ScriptException;
+
+import java.io.Reader;
+import java.io.StringReader;
 
 import org.apache.sling.scripting.api.AbstractSlingScriptEngine;
 import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
@@ -46,8 +46,11 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
     private ExtensionRegistryService extensionRegistryService;
     private SightlyEngineConfiguration configuration;
 
-    SightlyScriptEngine(SightlyScriptEngineFactory factory, ExtensionRegistryService extensionRegistryService,
-                        SlingHTLMasterCompiler slingHTLMasterCompiler, BundledUnitManagerImpl bundledUnitManager) {
+    SightlyScriptEngine(
+            SightlyScriptEngineFactory factory,
+            ExtensionRegistryService extensionRegistryService,
+            SlingHTLMasterCompiler slingHTLMasterCompiler,
+            BundledUnitManagerImpl bundledUnitManager) {
         super(factory);
         this.extensionRegistryService = extensionRegistryService;
         this.slingHTLMasterCompiler = slingHTLMasterCompiler;
@@ -109,6 +112,4 @@ public class SightlyScriptEngine extends AbstractSlingScriptEngine implements Co
             throw new NullPointerException("ScriptContext cannot be null");
         }
     }
-
-
 }

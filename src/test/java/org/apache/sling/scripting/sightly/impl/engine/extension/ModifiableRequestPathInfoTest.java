@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,40 +15,36 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.impl.engine.extension;
 
+import org.apache.sling.api.uri.SlingUriBuilder;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-import org.apache.sling.api.uri.SlingUriBuilder;
-
 public class ModifiableRequestPathInfoTest {
 
     private static final String EMPTY = "";
     private static final String PATH = "test";
     private static final String SELECTOR_STRING = "a.b";
-    private static final String[] SELECTOR_STRING_SET = new String[]{"a", "b"};
+    private static final String[] SELECTOR_STRING_SET = new String[] {"a", "b"};
     private static final String EXTENSION = "html";
     private static final String SUFFIX = "/suffix1/suffix2";
 
     private static final SlingUriBuilder emptyPathInfo =
             SlingUriBuilder.create().setPath(EMPTY);
-    private static final SlingUriBuilder simplePath =
-            SlingUriBuilder.create().setPath(PATH);
-    private static final SlingUriBuilder
-            pathWithExtension = SlingUriBuilder.create().setPath(PATH + "." + EXTENSION);
-    private static final SlingUriBuilder
-            pathWithSelectors = SlingUriBuilder.create().setPath(PATH + "." + SELECTOR_STRING + "." + EXTENSION);
-    private static final SlingUriBuilder
-            pathWithSelectorsSuffix = SlingUriBuilder.create().setPath(PATH + "." + SELECTOR_STRING + "." + EXTENSION + SUFFIX);
-    private static final SlingUriBuilder
-            pathWithMultipleDotsSuffix = SlingUriBuilder.create().setPath(
-            "test/child.name/resource." + SELECTOR_STRING + "." + EXTENSION + SUFFIX);
-
+    private static final SlingUriBuilder simplePath = SlingUriBuilder.create().setPath(PATH);
+    private static final SlingUriBuilder pathWithExtension =
+            SlingUriBuilder.create().setPath(PATH + "." + EXTENSION);
+    private static final SlingUriBuilder pathWithSelectors =
+            SlingUriBuilder.create().setPath(PATH + "." + SELECTOR_STRING + "." + EXTENSION);
+    private static final SlingUriBuilder pathWithSelectorsSuffix =
+            SlingUriBuilder.create().setPath(PATH + "." + SELECTOR_STRING + "." + EXTENSION + SUFFIX);
+    private static final SlingUriBuilder pathWithMultipleDotsSuffix =
+            SlingUriBuilder.create().setPath("test/child.name/resource." + SELECTOR_STRING + "." + EXTENSION + SUFFIX);
 
     @Test
     public void testGetResourcePath() throws Exception {
@@ -67,7 +63,9 @@ public class ModifiableRequestPathInfoTest {
         assertEquals(PATH + "." + EXTENSION, pathWithExtension.toString());
         assertEquals(PATH + "." + SELECTOR_STRING + "." + EXTENSION, pathWithSelectors.toString());
         assertEquals(PATH + "." + SELECTOR_STRING + "." + EXTENSION + SUFFIX, pathWithSelectorsSuffix.toString());
-        assertEquals("test/child.name/resource." + SELECTOR_STRING + "." + EXTENSION + SUFFIX, pathWithMultipleDotsSuffix.toString());
+        assertEquals(
+                "test/child.name/resource." + SELECTOR_STRING + "." + EXTENSION + SUFFIX,
+                pathWithMultipleDotsSuffix.toString());
     }
 
     @Test
@@ -99,5 +97,4 @@ public class ModifiableRequestPathInfoTest {
         assertEquals(SUFFIX, pathWithSelectorsSuffix.getSuffix());
         assertEquals("/resource." + SELECTOR_STRING + "." + EXTENSION + SUFFIX, pathWithMultipleDotsSuffix.getSuffix());
     }
-
 }
