@@ -47,8 +47,12 @@ import org.apache.sling.scripting.spi.bundle.BundledRenderUnit;
 import org.apache.sling.scripting.spi.bundle.TypeProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 import org.osgi.framework.wiring.BundleWiring;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -59,14 +63,53 @@ import org.osgi.service.component.annotations.Reference;
 @Component(service = {BundledUnitManagerImpl.class, BundledUnitManager.class})
 public class BundledUnitManagerImpl implements BundledUnitManager {
 
-    @Reference
-    private ScriptEngineManager scriptEngineManager;
+    private final ScriptCache scriptCache;
 
-    @Reference
-    private ScriptCache scriptCache;
+    private final ResourceResolverFactory resourceResolverFactory;
 
-    @Reference
-    private ResourceResolverFactory resourceResolverFactory;
+    private final BundleContext bundleContext;
+
+    private volatile ServiceReference<ScriptEngineManager> scriptEngineManagerServiceReference;
+
+    private volatile ScriptEngineManager scriptEngineManager;
+
+    @Activate
+    public BundledUnitManagerImpl(
+            final BundleContext bundleContext,
+            final @Reference ScriptCache scriptCache,
+            final @Reference ResourceResolverFactory resourceResolverFactory) {
+        this.resourceResolverFactory = resourceResolverFactory;
+        this.scriptCache = scriptCache;
+        this.bundleContext = bundleContext;
+    }
+
+    @Deactivate
+    protected void deactivate() {
+        if (this.scriptEngineManagerServiceReference != null) {
+            this.bundleContext.ungetService(this.scriptEngineManagerServiceReference);
+            this.scriptEngineManagerServiceReference = null;
+        }
+        this.scriptEngineManager = null;
+    }
+
+    ScriptEngineManager getScriptEngineManager() {
+        if (this.scriptEngineManager == null) {
+            synchronized (this) {
+                if (this.scriptEngineManager == null) {
+                    this.scriptEngineManagerServiceReference =
+                            this.bundleContext.getServiceReference(ScriptEngineManager.class);
+                    if (this.scriptEngineManagerServiceReference != null) {
+                        this.scriptEngineManager =
+                                this.bundleContext.getService(this.scriptEngineManagerServiceReference);
+                        if (this.scriptEngineManager == null) {
+                            this.scriptEngineManagerServiceReference = null;
+                        }
+                    }
+                }
+            }
+        }
+        return this.scriptEngineManager;
+    }
 
     /**
      * Given a {@link Bindings} map, this method will check if the {@code bindings} contain a value for the {@link
@@ -147,8 +190,9 @@ public class BundledUnitManagerImpl implements BundledUnitManager {
                                 provider.getBundle().getEntry("javax.script" + "/" + renderUnitBundledPath);
                         if (bundledScriptURL != null) {
                             try {
+                                ScriptEngineManager sem = this.getScriptEngineManager();
                                 SightlyScriptEngine sightlyScriptEngine =
-                                        (SightlyScriptEngine) scriptEngineManager.getEngineByName("htl");
+                                        sem == null ? null : (SightlyScriptEngine) sem.getEngineByName("htl");
                                 if (sightlyScriptEngine != null) {
                                     CachedScript cachedScript =
                                             scriptCache.getScript(bundledScriptURL.toExternalForm());
