@@ -19,7 +19,6 @@
 package org.apache.sling.scripting.sightly.impl.engine.bundled;
 
 import javax.script.Bindings;
-import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 import java.io.IOException;
@@ -41,6 +40,7 @@ import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.engine.BundledUnitManager;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyCompiledScript;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngine;
+import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngineFactory;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
 import org.apache.sling.scripting.sightly.render.RenderUnit;
 import org.apache.sling.scripting.spi.bundle.BundledRenderUnit;
@@ -48,25 +48,28 @@ import org.apache.sling.scripting.spi.bundle.TypeProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.osgi.framework.wiring.BundleWiring;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * This service allows various components to work with {@link
  * BundledRenderUnit} instance and perform dependency resolution based on their availability in
- * the {@link Bindings} maps passed to the HTL Script Engine.
+ * the {@link Bindings} maps passed to the HTL Script Engine. Given the dependency on the
+ * {@link SightlyScriptEngineFactory}, this service will be registered by the {@code SightlyScriptEngineFactory} when
+ * the factory is initialised.
  */
-@Component(service = {BundledUnitManagerImpl.class, BundledUnitManager.class})
 public class BundledUnitManagerImpl implements BundledUnitManager {
 
-    @Reference
-    private ScriptEngineManager scriptEngineManager;
+    private final ScriptCache scriptCache;
+    private final ResourceResolverFactory resourceResolverFactory;
+    private final SightlyScriptEngineFactory sightlyScriptEngineFactory;
 
-    @Reference
-    private ScriptCache scriptCache;
-
-    @Reference
-    private ResourceResolverFactory resourceResolverFactory;
+    public BundledUnitManagerImpl(
+            @NotNull SightlyScriptEngineFactory sightlyScriptEngineFactory,
+            @NotNull ScriptCache scriptCache,
+            @NotNull ResourceResolverFactory resourceResolverFactory) {
+        this.sightlyScriptEngineFactory = sightlyScriptEngineFactory;
+        this.scriptCache = scriptCache;
+        this.resourceResolverFactory = resourceResolverFactory;
+    }
 
     /**
      * Given a {@link Bindings} map, this method will check if the {@code bindings} contain a value for the {@link
@@ -148,7 +151,7 @@ public class BundledUnitManagerImpl implements BundledUnitManager {
                         if (bundledScriptURL != null) {
                             try {
                                 SightlyScriptEngine sightlyScriptEngine =
-                                        (SightlyScriptEngine) scriptEngineManager.getEngineByName("htl");
+                                        (SightlyScriptEngine) sightlyScriptEngineFactory.getScriptEngine();
                                 if (sightlyScriptEngine != null) {
                                     CachedScript cachedScript =
                                             scriptCache.getScript(bundledScriptURL.toExternalForm());
@@ -254,6 +257,11 @@ public class BundledUnitManagerImpl implements BundledUnitManager {
             return bundledRenderUnit.getService(clazz.getName());
         }
         return null;
+    }
+
+    @NotNull
+    public SightlyScriptEngineFactory getScriptEngineFactory() {
+        return sightlyScriptEngineFactory;
     }
 
     @Nullable
