@@ -21,11 +21,18 @@ package org.apache.sling.scripting.sightly.impl.engine;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
 
+import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.scripting.api.AbstractScriptEngineFactory;
+import org.apache.sling.scripting.api.ScriptCache;
+import org.apache.sling.scripting.sightly.engine.BundledUnitManager;
 import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
 import org.apache.sling.scripting.sightly.impl.engine.compiled.SlingHTLMasterCompiler;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
@@ -45,6 +52,11 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
         })
 public class SightlyScriptEngineFactory extends AbstractScriptEngineFactory {
 
+    public static final String SHORT_NAME = "sightly";
+    public static final String EXTENSION = "html";
+    private static final String LANGUAGE_NAME = "The HTL Templating Language";
+    private static final String LANGUAGE_VERSION = "1.4";
+
     @Reference(
             cardinality = ReferenceCardinality.OPTIONAL,
             policy = ReferencePolicy.DYNAMIC,
@@ -52,23 +64,43 @@ public class SightlyScriptEngineFactory extends AbstractScriptEngineFactory {
     private volatile SlingHTLMasterCompiler slingHTLMasterCompiler;
 
     @Reference
-    private BundledUnitManagerImpl bundledUnitManager;
-
-    @Reference
     private ExtensionRegistryService extensionRegistryService;
 
     @Reference
     private SightlyEngineConfiguration configuration;
 
-    public static final String SHORT_NAME = "sightly";
-    public static final String EXTENSION = "html";
+    @Reference
+    private ScriptCache scriptCache;
 
-    private static final String LANGUAGE_NAME = "The HTL Templating Language";
-    private static final String LANGUAGE_VERSION = "1.4";
+    @Reference
+    private ResourceResolverFactory resourceResolverFactory;
+
+    private ServiceRegistration<BundledUnitManager> bundledUnitManagerServiceRegistration;
+    private ServiceRegistration<BundledUnitManagerImpl> bundledUnitManagerImplServiceRegistration;
+    private BundledUnitManagerImpl bundledUnitManager;
 
     public SightlyScriptEngineFactory() {
         setNames("htl", "HTL", SHORT_NAME);
         setExtensions(EXTENSION);
+    }
+
+    @Activate
+    public void activate(BundleContext bundleContext) {
+        bundledUnitManager = new BundledUnitManagerImpl(this, scriptCache, resourceResolverFactory);
+        this.bundledUnitManagerImplServiceRegistration =
+                bundleContext.registerService(BundledUnitManagerImpl.class, bundledUnitManager, null);
+        this.bundledUnitManagerServiceRegistration =
+                bundleContext.registerService(BundledUnitManager.class, bundledUnitManager, null);
+    }
+
+    @Deactivate
+    public void deactivate() {
+        if (bundledUnitManagerServiceRegistration != null) {
+            bundledUnitManagerServiceRegistration.unregister();
+        }
+        if (bundledUnitManagerImplServiceRegistration != null) {
+            bundledUnitManagerImplServiceRegistration.unregister();
+        }
     }
 
     @Override

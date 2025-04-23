@@ -24,17 +24,14 @@ import javax.script.CompiledScript;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 
-import java.io.StringReader;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.api.scripting.SlingScript;
-import org.apache.sling.scripting.api.CachedScript;
-import org.apache.sling.scripting.api.ScriptCache;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngineFactory;
 import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
@@ -83,9 +80,6 @@ public class ScriptUseProvider implements UseProvider {
     private ScriptEngineManager scriptEngineManager;
 
     @Reference
-    private ScriptCache scriptCache;
-
-    @Reference
     protected ScriptDependencyResolver scriptDependencyResolver;
 
     @Override
@@ -101,30 +95,20 @@ public class ScriptUseProvider implements UseProvider {
             String scriptUrlAsString = script.toExternalForm();
             bindings.remove(BundledRenderUnit.VARIABLE);
             bindings.put(ScriptEngine.FILENAME, scriptUrlAsString);
-            try {
-                ScriptEngine scriptEngine = scriptEngineManager.getEngineByExtension(extension);
-                if (scriptEngine != null) {
+            ScriptEngine scriptEngine = scriptEngineManager.getEngineByExtension(extension);
+            if (scriptEngine != null) {
+                try (ScriptNameAwareReader reader = new ScriptNameAwareReader(
+                        new InputStreamReader(script.openStream(), StandardCharsets.UTF_8), scriptUrlAsString)) {
                     if (scriptEngine instanceof Compilable) {
-                        CompiledScript compiledScript;
-                        CachedScript cachedScript = scriptCache.getScript(scriptUrlAsString);
-                        if (cachedScript == null) {
-                            Compilable compilableScriptEngine = (Compilable) scriptEngine;
-                            ScriptNameAwareReader reader = new ScriptNameAwareReader(
-                                    new StringReader(IOUtils.toString(script, StandardCharsets.UTF_8)),
-                                    scriptUrlAsString);
-                            compiledScript = compilableScriptEngine.compile(reader);
-                        } else {
-                            compiledScript = cachedScript.getCompiledScript();
-                        }
+                        Compilable compilableScriptEngine = (Compilable) scriptEngine;
+                        CompiledScript compiledScript = compilableScriptEngine.compile(reader);
                         return ProviderOutcome.notNullOrFailure(compiledScript.eval(bindings));
                     } else {
-                        ScriptNameAwareReader reader = new ScriptNameAwareReader(
-                                new StringReader(IOUtils.toString(script, StandardCharsets.UTF_8)), scriptUrlAsString);
                         return ProviderOutcome.notNullOrFailure(scriptEngine.eval(reader, bindings));
                     }
+                } catch (Exception e) {
+                    return ProviderOutcome.failure(e);
                 }
-            } catch (Exception e) {
-                return ProviderOutcome.failure(e);
             }
         }
         Resource scriptResource = scriptDependencyResolver.resolveScript(renderContext, scriptName);

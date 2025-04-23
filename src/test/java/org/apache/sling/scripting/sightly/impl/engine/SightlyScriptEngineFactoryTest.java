@@ -21,7 +21,8 @@ package org.apache.sling.scripting.sightly.impl.engine;
 import javax.script.ScriptEngineFactory;
 import javax.script.SimpleScriptContext;
 
-import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
+import org.apache.sling.api.resource.ResourceResolverFactory;
+import org.apache.sling.scripting.api.ScriptCache;
 import org.apache.sling.scripting.sightly.impl.engine.runtime.RenderContextImpl;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.testing.mock.osgi.junit.OsgiContext;
@@ -41,10 +42,11 @@ public class SightlyScriptEngineFactoryTest {
     @Test
     public void testLegacyBooleanCastingFalse() {
         ExtensionRegistryService extensionRegistryService = mock(ExtensionRegistryService.class);
-        context.registerService(BundledUnitManagerImpl.class, mock(BundledUnitManagerImpl.class));
+        context.registerService(ScriptCache.class, mock(ScriptCache.class));
+        context.registerService(ResourceResolverFactory.class, mock(ResourceResolverFactory.class));
         context.registerService(ExtensionRegistryService.class, extensionRegistryService);
         context.registerInjectActivateService(new SightlyEngineConfiguration(), "legacyBooleanCasting", false);
-        context.registerInjectActivateService(new SightlyScriptEngineFactory());
+        context.registerInjectActivateService(SightlyScriptEngineFactory.class);
 
         SightlyScriptEngineFactory factory = (SightlyScriptEngineFactory) context.getService(ScriptEngineFactory.class);
         assertNotNull(factory);
@@ -56,10 +58,11 @@ public class SightlyScriptEngineFactoryTest {
     @Test
     public void testLegacyBooleanCasting() {
         ExtensionRegistryService extensionRegistryService = mock(ExtensionRegistryService.class);
-        context.registerService(BundledUnitManagerImpl.class, mock(BundledUnitManagerImpl.class));
+        context.registerService(ScriptCache.class, mock(ScriptCache.class));
         context.registerService(ExtensionRegistryService.class, extensionRegistryService);
+        context.registerService(ResourceResolverFactory.class, mock(ResourceResolverFactory.class));
         context.registerInjectActivateService(new SightlyEngineConfiguration(), "legacyBooleanCasting", true);
-        context.registerInjectActivateService(new SightlyScriptEngineFactory());
+        context.registerInjectActivateService(SightlyScriptEngineFactory.class);
 
         SightlyScriptEngineFactory factory = (SightlyScriptEngineFactory) context.getService(ScriptEngineFactory.class);
         assertNotNull(factory);

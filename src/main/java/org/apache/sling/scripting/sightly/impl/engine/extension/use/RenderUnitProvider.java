@@ -19,8 +19,6 @@
 package org.apache.sling.scripting.sightly.impl.engine.extension.use;
 
 import javax.script.Bindings;
-import javax.script.CompiledScript;
-import javax.script.ScriptEngineManager;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -29,8 +27,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.scripting.SlingScriptHelper;
-import org.apache.sling.scripting.api.CachedScript;
-import org.apache.sling.scripting.api.ScriptCache;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.engine.ResourceResolution;
@@ -70,13 +66,7 @@ public class RenderUnitProvider implements UseProvider {
     }
 
     @Reference
-    private ScriptCache scriptCache;
-
-    @Reference
     private BundledUnitManagerImpl bundledUnitManager;
-
-    @Reference
-    private ScriptEngineManager scriptEngineManager;
 
     @Reference
     private ScriptDependencyResolver scriptDependencyResolver;
@@ -118,37 +108,20 @@ public class RenderUnitProvider implements UseProvider {
                         return ProviderOutcome.success(bundledRenderUnit.getUnit());
                     }
                 }
-                CachedScript cachedScript = scriptCache.getScript(renderUnitResource.getPath());
-                final SightlyCompiledScript compiledScript;
-                if (cachedScript != null) {
-                    compiledScript = (SightlyCompiledScript) cachedScript.getCompiledScript();
-                } else {
-                    SightlyScriptEngine sightlyScriptEngine = (SightlyScriptEngine)
-                            scriptEngineManager.getEngineByName(SightlyScriptEngineFactory.SHORT_NAME);
-                    String encoding = renderUnitResource.getResourceMetadata().getCharacterEncoding();
-                    if (StringUtils.isEmpty(encoding)) {
-                        encoding = "UTF-8";
-                    }
-                    InputStream inputStream = renderUnitResource.adaptTo(InputStream.class);
-                    if (inputStream == null) {
-                        return ProviderOutcome.failure();
-                    }
-                    InputStreamReader inputStreamReader = new InputStreamReader(inputStream, encoding);
-                    ScriptNameAwareReader reader =
-                            new ScriptNameAwareReader(inputStreamReader, renderUnitResource.getPath());
-                    compiledScript = (SightlyCompiledScript) sightlyScriptEngine.compile(reader);
-                    scriptCache.putScript(new CachedScript() {
-                        @Override
-                        public String getScriptPath() {
-                            return renderUnitResource.getPath();
-                        }
-
-                        @Override
-                        public CompiledScript getCompiledScript() {
-                            return compiledScript;
-                        }
-                    });
+                SightlyScriptEngine sightlyScriptEngine = (SightlyScriptEngine)
+                        bundledUnitManager.getScriptEngineFactory().getScriptEngine();
+                String encoding = renderUnitResource.getResourceMetadata().getCharacterEncoding();
+                if (StringUtils.isEmpty(encoding)) {
+                    encoding = "UTF-8";
                 }
+                InputStream inputStream = renderUnitResource.adaptTo(InputStream.class);
+                if (inputStream == null) {
+                    return ProviderOutcome.failure();
+                }
+                InputStreamReader inputStreamReader = new InputStreamReader(inputStream, encoding);
+                ScriptNameAwareReader reader =
+                        new ScriptNameAwareReader(inputStreamReader, renderUnitResource.getPath());
+                SightlyCompiledScript compiledScript = (SightlyCompiledScript) sightlyScriptEngine.compile(reader);
                 return ProviderOutcome.success(compiledScript.getRenderUnit());
             } catch (Exception e) {
                 return ProviderOutcome.failure(e);
