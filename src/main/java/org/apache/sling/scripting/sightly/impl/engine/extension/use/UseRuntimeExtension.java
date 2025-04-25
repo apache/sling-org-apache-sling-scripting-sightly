@@ -49,7 +49,7 @@ import org.osgi.service.component.annotations.ReferencePolicy;
         property = {RuntimeExtension.NAME + "=" + RuntimeExtension.USE})
 public class UseRuntimeExtension implements RuntimeExtension {
 
-    private final Map<ServiceReference, UseProvider> providersMap = new ConcurrentSkipListMap<>();
+    private final Map<ServiceReference<UseProvider>, UseProvider> providersMap = new ConcurrentSkipListMap<>();
 
     @Override
     public Object call(final RenderContext renderContext, Object... arguments) {
@@ -87,7 +87,7 @@ public class UseRuntimeExtension implements RuntimeExtension {
         providersMap.put(serviceReference, provider);
     }
 
-    private void unbindUseProvider(ServiceReference serviceReference) {
+    private void unbindUseProvider(ServiceReference<UseProvider> serviceReference) {
         providersMap.remove(serviceReference);
     }
 }

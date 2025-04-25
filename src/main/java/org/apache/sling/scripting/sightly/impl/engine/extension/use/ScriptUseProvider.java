@@ -27,12 +27,14 @@ import javax.script.ScriptEngineManager;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.api.scripting.SlingScript;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
+import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.impl.engine.SightlyScriptEngineFactory;
 import org.apache.sling.scripting.sightly.impl.engine.bundled.BundledUnitManagerImpl;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
@@ -41,8 +43,13 @@ import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.use.ProviderOutcome;
 import org.apache.sling.scripting.sightly.use.UseProvider;
 import org.apache.sling.scripting.spi.bundle.BundledRenderUnit;
+import org.jetbrains.annotations.Nullable;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
+import org.osgi.framework.ServiceReference;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.slf4j.Logger;
@@ -73,14 +80,29 @@ public class ScriptUseProvider implements UseProvider {
 
     private static final Logger log = LoggerFactory.getLogger(ScriptUseProvider.class);
 
-    @Reference
-    private BundledUnitManagerImpl bundledUnitManager;
+    private final AtomicReference<ScriptEngineManager> engineManagerRef = new AtomicReference<>();
+    private final BundleContext bundleContext;
+    private final BundledUnitManagerImpl bundledUnitManager;
+    protected final ScriptDependencyResolver scriptDependencyResolver;
 
-    @Reference
-    private ScriptEngineManager scriptEngineManager;
+    private ServiceReference<ScriptEngineManager> scriptEngineManagerServiceReference;
 
-    @Reference
-    protected ScriptDependencyResolver scriptDependencyResolver;
+    @Activate
+    public ScriptUseProvider(
+            BundleContext bundleContext,
+            @Reference BundledUnitManagerImpl bundledUnitManager,
+            @Reference ScriptDependencyResolver scriptDependencyResolver) {
+        this.bundleContext = bundleContext;
+        this.bundledUnitManager = bundledUnitManager;
+        this.scriptDependencyResolver = scriptDependencyResolver;
+    }
+
+    @Deactivate
+    protected void deactivate() {
+        if (scriptEngineManagerServiceReference != null) {
+            bundleContext.ungetService(scriptEngineManagerServiceReference);
+        }
+    }
 
     @Override
     public ProviderOutcome provide(String scriptName, RenderContext renderContext, Bindings arguments) {
@@ -95,6 +117,10 @@ public class ScriptUseProvider implements UseProvider {
             String scriptUrlAsString = script.toExternalForm();
             bindings.remove(BundledRenderUnit.VARIABLE);
             bindings.put(ScriptEngine.FILENAME, scriptUrlAsString);
+            ScriptEngineManager scriptEngineManager = getScriptEngineManager();
+            if (scriptEngineManager == null) {
+                return ProviderOutcome.failure(new SightlyException("Failed to obtain a ScriptEngineManager."));
+            }
             ScriptEngine scriptEngine = scriptEngineManager.getEngineByExtension(extension);
             if (scriptEngine != null) {
                 try (ScriptNameAwareReader reader = new ScriptNameAwareReader(
@@ -136,5 +162,25 @@ public class ScriptUseProvider implements UseProvider {
             extension = null;
         }
         return extension;
+    }
+
+    @Nullable
+    private ScriptEngineManager getScriptEngineManager() {
+        ScriptEngineManager result = engineManagerRef.get();
+        if (result == null) {
+            ServiceReference<ScriptEngineManager> ref = bundleContext.getServiceReference(ScriptEngineManager.class);
+            if (ref != null) {
+                ScriptEngineManager mgr = bundleContext.getService(ref);
+                if (mgr != null && engineManagerRef.compareAndSet(null, mgr)) {
+                    this.scriptEngineManagerServiceReference = ref;
+                    return mgr;
+                } else if (mgr != null) {
+                    // Already initialized by another thread; unget this one
+                    bundleContext.ungetService(ref);
+                }
+            }
+            return null;
+        }
+        return result;
     }
 }
