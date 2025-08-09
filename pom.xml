@@ -56,6 +56,8 @@
         compatibility between newer versions of the JDK and JDK8, we use COMPAT as the default locale data provider for tests. -->
         <java.locale.providers>COMPAT,JRE,SPI</java.locale.providers>
         <project.build.outputTimestamp>2025-04-28T11:56:59Z</project.build.outputTimestamp>
+        <surefire.localeProviders>-Djava.locale.providers=${java.locale.providers}</surefire.localeProviders>
+        <surefire.argline>${surefire.localeProviders}</surefire.argline>
     </properties>
 
     <!-- ======================================================================= -->
@@ -296,7 +298,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>-Djava.locale.providers=${java.locale.providers}</argLine>
+                    <argLine>${surefire.argline}</argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -310,4 +312,12 @@
         </plugins>
     </build>
 
+    <profiles>
+        <profile>
+            <id>jacoco-report</id>
+            <properties>
+                <surefire.argline>${jacoco.ut.command} ${surefire.localeProviders}</surefire.argline>
+            </properties>
+        </profile>
+    </profiles>
 </project>
