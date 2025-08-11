@@ -67,6 +67,7 @@ public class FormatFilterExtension implements RuntimeExtension {
         ExtensionUtils.checkArgumentCount(RuntimeExtension.FORMAT, arguments, 2);
         RuntimeObjectModel runtimeObjectModel = renderContext.getObjectModel();
         String source = runtimeObjectModel.toString(arguments[0]);
+        @SuppressWarnings("unchecked")
         Map<String, Object> options = (Map<String, Object>) arguments[1];
 
         String formattingType = runtimeObjectModel.toString(options.get(TYPE_OPTION));

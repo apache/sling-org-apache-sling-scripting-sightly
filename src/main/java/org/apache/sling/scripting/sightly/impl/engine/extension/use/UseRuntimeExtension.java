@@ -59,6 +59,7 @@ public class UseRuntimeExtension implements RuntimeExtension {
         if (StringUtils.isEmpty(identifier)) {
             throw new SightlyException("data-sly-use needs to be passed an identifier");
         }
+        @SuppressWarnings("unchecked")
         Map<String, Object> useArgumentsMap = runtimeObjectModel.toMap(arguments[1]);
         Bindings useArguments = new SimpleBindings(Collections.unmodifiableMap(useArgumentsMap));
         ArrayList<UseProvider> providers = new ArrayList<>(providersMap.values());
@@ -87,6 +88,7 @@ public class UseRuntimeExtension implements RuntimeExtension {
         providersMap.put(serviceReference, provider);
     }
 
+    @SuppressWarnings("unused")
     private void unbindUseProvider(ServiceReference<UseProvider> serviceReference) {
         providersMap.remove(serviceReference);
     }

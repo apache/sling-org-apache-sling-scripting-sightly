@@ -18,14 +18,16 @@
  */
 package org.apache.sling.scripting.sightly.engine;
 
-import javax.servlet.Servlet;
+import java.util.function.Supplier;
 
+import jakarta.servlet.Servlet;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingJakartaHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Utility class which is used by the HTL engine &amp; extensions to resolve resources.
@@ -57,7 +59,7 @@ public final class ResourceResolution {
      *                                                 superType chain has reached the maximum limit
      * @see ResourceResolver#getSearchPath()
      */
-    public static Resource getResourceFromSearchPath(Resource base, String path) {
+    public static @Nullable Resource getResourceFromSearchPath(@Nullable Resource base, @Nullable String path) {
         if (base == null || path == null) {
             return null;
         }
@@ -68,7 +70,9 @@ public final class ResourceResolution {
             }
         }
         Resource internalBase;
-        if ("nt:file".equals(base.getResourceType()) || base.adaptTo(Servlet.class) != null) {
+        if ("nt:file".equals(base.getResourceType())
+                || base.adaptTo(Servlet.class) != null
+                || base.adaptTo(javax.servlet.Servlet.class) != null) {
             internalBase = base.getParent();
         } else {
             internalBase = base;
@@ -85,12 +89,44 @@ public final class ResourceResolution {
      * @param resolver a {@link ResourceResolver} that has read access rights to resources from the search path
      * @param request  the request
      * @return the resource identified by the {@code request} or {@code null} if no resource was found
+     * @deprecated use {@link #getResourceForJakartaRequest(ResourceResolver, SlingJakartaHttpServletRequest)} instead
      */
-    public static Resource getResourceForRequest(ResourceResolver resolver, SlingHttpServletRequest request) {
-        if (resolver == null || request == null) {
+    @Deprecated(since = "1.2.0")
+    public static @Nullable Resource getResourceForRequest(
+            @Nullable ResourceResolver resolver, @Nullable org.apache.sling.api.SlingHttpServletRequest request) {
+        Supplier<Resource> resourceProvider = request == null ? null : request::getResource;
+        return getResourceForResourceProvider(resolver, resourceProvider);
+    }
+
+    /**
+     * <p>
+     * Resolves the resource accessed by a {@code request}. Since the {@code request} can use an anonymous {@code ResourceResolver}, the
+     * passed {@code resolver} parameter should have read access rights to resources from the search path.
+     * </p>
+     *
+     * @param resolver a {@link ResourceResolver} that has read access rights to resources from the search path
+     * @param request  the request
+     * @return the resource identified by the {@code request} or {@code null} if no resource was found
+     */
+    public static @Nullable Resource getResourceForJakartaRequest(
+            @Nullable ResourceResolver resolver, @Nullable SlingJakartaHttpServletRequest request) {
+        Supplier<Resource> resourceProvider = request == null ? null : request::getResource;
+        return getResourceForResourceProvider(resolver, resourceProvider);
+    }
+
+    /**
+     * Common functionality for code-reuse between {@link #getResourceForRequest(ResourceResolver, org.apache.sling.api.SlingHttpServletRequest)} and {@link #getResourceForJakartaRequest(ResourceResolver, SlingJakartaHttpServletRequest)}
+     * @param resolver a {@link ResourceResolver} that has read access rights to resources from the search path
+     * @param resourceProvider the function that returns the resource to consider
+     * @return the resource identified by the {@code resourcePRovider} or {@code null} if no resource was found
+     */
+    private static @Nullable Resource getResourceForResourceProvider(
+            @Nullable ResourceResolver resolver, @Nullable Supplier<Resource> resourceProvider) {
+        if (resolver == null || resourceProvider == null) {
             return null;
         }
-        String resourceType = request.getResource().getResourceType();
+        Resource resource = resourceProvider.get();
+        String resourceType = resource.getResourceType();
         if (StringUtils.isNotEmpty(resourceType)) {
             return getScriptResource(resolver, resourceType);
         }
@@ -107,10 +143,7 @@ public final class ResourceResolution {
      * @throws java.lang.IllegalStateException         if more than {@link ResourceResolution#RECURSION_LIMIT} steps were
      *                                                 necessary to search for the resource on the resource superType chain
      */
-    private static Resource resolveComponentInternal(Resource base, String path) {
-        if (base == null || path == null) {
-            throw new NullPointerException("Arguments cannot be null");
-        }
+    private static @Nullable Resource resolveComponentInternal(@NotNull Resource base, @NotNull String path) {
         Resource resource = recursiveResolution(base, path);
         if (resource == null) {
             resource = locateInSearchPath(base.getResourceResolver(), path);

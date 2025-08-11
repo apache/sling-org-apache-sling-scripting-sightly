@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingJakartaHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.api.resource.observation.ExternalResourceChangeListener;
@@ -117,13 +117,13 @@ public class ScriptDependencyResolver
      * @return the matching resource or null if the looked up resource does not exist
      */
     public Resource resolveScript(RenderContext renderContext, String scriptIdentifier) {
-        SlingHttpServletRequest request = BindingsUtils.getRequest(renderContext.getBindings());
+        SlingJakartaHttpServletRequest jakartaRequest = BindingsUtils.getJakartaRequest(renderContext.getBindings());
         if (!cacheEnabled) {
-            return internalResolveScript(request, renderContext, scriptIdentifier);
+            return internalResolveScript(jakartaRequest, renderContext, scriptIdentifier);
         }
-        String cacheKey = request.getResource().getResourceType() + ":" + scriptIdentifier;
+        String cacheKey = jakartaRequest.getResource().getResourceType() + ":" + scriptIdentifier;
         String scriptPath = resolutionCache.computeIfAbsent(cacheKey, t -> {
-            Resource r = internalResolveScript(request, renderContext, scriptIdentifier);
+            Resource r = internalResolveScript(jakartaRequest, renderContext, scriptIdentifier);
             if (r == null) {
                 return NOT_FOUND_MARKER;
             } else {
@@ -139,8 +139,8 @@ public class ScriptDependencyResolver
     }
 
     private @Nullable Resource internalResolveScript(
-            SlingHttpServletRequest request, RenderContext renderContext, String scriptIdentifier) {
-        Resource caller = ResourceResolution.getResourceForRequest(
+            SlingJakartaHttpServletRequest request, RenderContext renderContext, String scriptIdentifier) {
+        Resource caller = ResourceResolution.getResourceForJakartaRequest(
                 scriptingResourceResolverProvider.getRequestScopedResourceResolver(), request);
         Resource result = ResourceResolution.getResourceFromSearchPath(caller, scriptIdentifier);
         if (result == null) {
