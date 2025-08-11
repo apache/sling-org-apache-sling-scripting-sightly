@@ -80,7 +80,7 @@ public class I18nRuntimeExtensionTest {
         assertEquals("key1", extension.call(renderContext, "key1", Map.of("basename", "test.Resource")));
 
         // fill in some values
-        Locale defaultLocale = Locale.getDefault();
+        Locale defaultLocale = context.jakartaRequest().getLocale();
         MockResourceBundle mockRB1 =
                 (MockResourceBundle) context.jakartaRequest().getResourceBundle("test.Resource", defaultLocale);
         mockRB1.put("key1", "translatedValue1");
