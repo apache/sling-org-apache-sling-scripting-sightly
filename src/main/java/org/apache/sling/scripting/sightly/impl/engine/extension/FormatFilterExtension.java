@@ -147,8 +147,8 @@ public class FormatFilterExtension implements RuntimeExtension {
             return TimeZone.getTimeZone(runtimeObjectModel.toString(options.get(TIMEZONE_OPTION)));
         } else {
             Object formatObject = options.get(FORMAT_OPTION);
-            if (formatObject instanceof Calendar) {
-                return ((Calendar) formatObject).getTimeZone();
+            if (formatObject instanceof Calendar calendar) {
+                return calendar.getTimeZone();
             }
             return TimeZone.getDefault();
         }
@@ -156,7 +156,7 @@ public class FormatFilterExtension implements RuntimeExtension {
 
     private Object[] decodeParams(RuntimeObjectModel runtimeObjectModel, Object paramObj) {
         if (paramObj == null) {
-            return null;
+            return null; // NOSONAR
         }
         if (runtimeObjectModel.isCollection(paramObj)) {
             return runtimeObjectModel.toCollection(paramObj).toArray();
@@ -206,8 +206,7 @@ public class FormatFilterExtension implements RuntimeExtension {
 
     private FormatStyle getPredefinedFormattingStyleFromValue(String value) {
         switch (value.toLowerCase(Locale.ROOT)) {
-            case "default":
-            case "medium":
+            case "default", "medium":
                 return FormatStyle.MEDIUM;
             case "short":
                 return FormatStyle.SHORT;

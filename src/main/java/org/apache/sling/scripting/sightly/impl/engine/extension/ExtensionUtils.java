@@ -30,6 +30,10 @@ import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
  */
 public class ExtensionUtils {
 
+    private ExtensionUtils() {
+        // to hide public ctor
+    }
+
     /**
      * Helper method for checking if the number of arguments passed to a {@link RuntimeExtension} are equal to what the extension requires.
      *

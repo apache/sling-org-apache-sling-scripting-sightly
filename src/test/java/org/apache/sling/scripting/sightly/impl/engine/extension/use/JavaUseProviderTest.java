@@ -87,7 +87,6 @@ public class JavaUseProviderTest {
         assertNotNull(provider);
 
         arguments = new SlingBindings();
-        assertNotNull(arguments);
         // for coverage of request attribute juggling before and after provide
         arguments.put("key1", "value1");
         arguments.put("key2", "value2");

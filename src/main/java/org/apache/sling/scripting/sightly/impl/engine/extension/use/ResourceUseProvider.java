@@ -44,7 +44,7 @@ public class ResourceUseProvider implements UseProvider {
                 description =
                         "The Service Ranking value acts as the priority with which this Use Provider is queried to return an "
                                 + "Use-object. A higher value represents a higher priority.")
-        int service_ranking() default -10;
+        int service_ranking() default -10; // NOSONAR
     }
 
     @Override
