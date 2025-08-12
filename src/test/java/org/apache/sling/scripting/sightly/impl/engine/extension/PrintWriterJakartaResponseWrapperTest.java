@@ -21,31 +21,29 @@ package org.apache.sling.scripting.sightly.impl.engine.extension;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import org.apache.sling.api.SlingHttpServletResponse;
-import org.apache.sling.api.wrappers.SlingHttpServletResponseWrapper;
+import org.apache.sling.testing.mock.sling.junit.SlingContext;
+import org.apache.sling.testing.mock.sling.servlet.MockSlingJakartaHttpServletResponse;
+import org.junit.Rule;
+import org.junit.Test;
+
+import static org.junit.Assert.assertSame;
 
 /**
- * Wrapper response to redirect the output into a specified print writer
- * @deprecated use {@link PrintWriterJakartaResponseWrapper} instead
+ *
  */
-@Deprecated(since = "2.0.0-1.4.0")
-public class PrintWriterResponseWrapper extends SlingHttpServletResponseWrapper {
+public class PrintWriterJakartaResponseWrapperTest {
 
-    private final PrintWriter writer;
+    @Rule
+    public SlingContext context = new SlingContext();
 
     /**
-     * Create a wrapper for the supplied wrappedRequest
-     *
-     * @param writer - the base writer
-     * @param wrappedResponse - the wrapped response
+     * Test method for {@link org.apache.sling.scripting.sightly.impl.engine.extension.PrintWriterJakartaResponseWrapper#getWriter()}.
      */
-    public PrintWriterResponseWrapper(PrintWriter writer, SlingHttpServletResponse wrappedResponse) {
-        super(wrappedResponse);
-        this.writer = writer;
-    }
-
-    @Override
-    public PrintWriter getWriter() throws IOException {
-        return writer;
+    @Test
+    public void testGetWriter() throws IOException {
+        MockSlingJakartaHttpServletResponse jakartaResponse = context.jakartaResponse();
+        PrintWriter pw = new PrintWriter(jakartaResponse.getOutputStream());
+        PrintWriterJakartaResponseWrapper wrapper = new PrintWriterJakartaResponseWrapper(pw, jakartaResponse);
+        assertSame(wrapper.getWriter(), pw);
     }
 }

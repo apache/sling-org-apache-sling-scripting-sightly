@@ -84,6 +84,8 @@ public class FormatFilterExtensionTest {
     @Test
     public void testDateFormatNull() {
         assertNull(subject.call(renderContext, "default", new HashMap<String, Object>() {
+            private static final long serialVersionUID = 1L;
+
             {
                 put(FormatFilterExtension.TYPE_OPTION, "date");
                 put(FormatFilterExtension.FORMAT, null);
@@ -184,6 +186,8 @@ public class FormatFilterExtensionTest {
         assertEquals(
                 "#1: 1918 {0}",
                 subject.call(renderContext, "#1: yyyy {0}", new HashMap<String, Object>() {
+                    private static final long serialVersionUID = 1L;
+
                     {
                         put(FormatFilterExtension.TYPE_OPTION, FormatFilterExtension.DATE_FORMAT_TYPE);
                         put(FormatFilterExtension.FORMAT_OPTION, testDate);
@@ -228,6 +232,8 @@ public class FormatFilterExtensionTest {
     @Test
     public void testStringFormat() {
         Object result = subject.call(renderContext, "This {0} a {1} format", new HashMap<String, Object>() {
+            private static final long serialVersionUID = 1L;
+
             {
                 put(FormatFilterExtension.FORMAT, Arrays.asList("is", "simple"));
                 put(FormatFilterExtension.TYPE_OPTION, FormatFilterExtension.STRING_FORMAT_TYPE);
@@ -249,6 +255,8 @@ public class FormatFilterExtensionTest {
                 renderContext,
                 "This query has {0,plural,zero {# results} one {# result} other {# results}}",
                 new HashMap<String, Object>() {
+                    private static final long serialVersionUID = 1L;
+
                     {
                         put(FormatFilterExtension.FORMAT, Collections.singletonList(7));
                         put(FormatFilterExtension.LOCALE_OPTION, "en_US");

@@ -48,6 +48,8 @@ public class ExtensionRegistryServiceTest {
         ServiceRegistration<RuntimeExtension> registration1 = slingContext
                 .bundleContext()
                 .registerService(RuntimeExtension.class, extension1, new Hashtable<String, Object>() {
+                    private static final long serialVersionUID = 1L;
+
                     {
                         put(RuntimeExtension.NAME, "test");
                     }
@@ -57,6 +59,8 @@ public class ExtensionRegistryServiceTest {
         ServiceRegistration<RuntimeExtension> registration2 = slingContext
                 .bundleContext()
                 .registerService(RuntimeExtension.class, extension2, new Hashtable<String, Object>() {
+                    private static final long serialVersionUID = 1L;
+
                     {
                         put(Constants.SERVICE_RANKING, 2);
                         put(RuntimeExtension.NAME, "test");

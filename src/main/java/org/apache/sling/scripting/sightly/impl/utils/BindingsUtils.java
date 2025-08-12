@@ -20,8 +20,8 @@ package org.apache.sling.scripting.sightly.impl.utils;
 
 import javax.script.Bindings;
 
-import org.apache.sling.api.SlingHttpServletRequest;
-import org.apache.sling.api.SlingHttpServletResponse;
+import org.apache.sling.api.SlingJakartaHttpServletRequest;
+import org.apache.sling.api.SlingJakartaHttpServletResponse;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.api.scripting.SlingBindings;
@@ -31,6 +31,10 @@ import org.apache.sling.api.scripting.SlingScriptHelper;
  * {@code BindingsUtils} provides helper methods for retrieving commonly used objects from a {@link javax.script.Bindings} map.
  */
 public class BindingsUtils {
+
+    private BindingsUtils() {
+        // to hide public ctor
+    }
 
     /**
      * Retrieves the {@link Resource} from a {@link Bindings} map.
@@ -43,23 +47,47 @@ public class BindingsUtils {
     }
 
     /**
-     * Retrieves the {@link SlingHttpServletRequest} from a {@link Bindings} map.
+     * Retrieves the {@link org.apache.sling.api.SlingHttpServletRequest} from a {@link Bindings} map.
      *
      * @param bindings the bindings maps
-     * @return the {@link SlingHttpServletRequest} if found, {@code null} otherwise
+     * @return the {@link org.apache.sling.api.SlingHttpServletRequest} if found, {@code null} otherwise
+     * @deprecated use {@link #getJakartaRequest(Bindings)} instead
      */
-    public static SlingHttpServletRequest getRequest(Bindings bindings) {
-        return (SlingHttpServletRequest) bindings.get(SlingBindings.REQUEST);
+    @Deprecated(since = "2.0.0-1.4.0")
+    public static org.apache.sling.api.SlingHttpServletRequest getRequest(Bindings bindings) {
+        return (org.apache.sling.api.SlingHttpServletRequest) bindings.get(SlingBindings.REQUEST);
     }
 
     /**
-     * Retrieves the {@link SlingHttpServletResponse} from a {@link Bindings} map.
+     * Retrieves the {@link org.apache.sling.api.SlingHttpServletResponse} from a {@link Bindings} map.
      *
      * @param bindings the bindings maps
-     * @return the {@link SlingHttpServletResponse} if found, {@code null} otherwise
+     * @return the {@link org.apache.sling.api.SlingHttpServletResponse} if found, {@code null} otherwise
+     * @deprecated use {@link #getJakartaResponse(Bindings)} instead
      */
-    public static SlingHttpServletResponse getResponse(Bindings bindings) {
-        return (SlingHttpServletResponse) bindings.get(SlingBindings.RESPONSE);
+    @Deprecated(since = "2.0.0-1.4.0")
+    public static org.apache.sling.api.SlingHttpServletResponse getResponse(Bindings bindings) {
+        return (org.apache.sling.api.SlingHttpServletResponse) bindings.get(SlingBindings.RESPONSE);
+    }
+
+    /**
+     * Retrieves the {@link SlingJakartaHttpServletRequest} from a {@link Bindings} map.
+     *
+     * @param bindings the bindings maps
+     * @return the {@link SlingJakartaHttpServletRequest} if found, {@code null} otherwise
+     */
+    public static SlingJakartaHttpServletRequest getJakartaRequest(Bindings bindings) {
+        return (SlingJakartaHttpServletRequest) bindings.get(SlingBindings.JAKARTA_REQUEST);
+    }
+
+    /**
+     * Retrieves the {@link SlingJakartaHttpServletResponse} from a {@link Bindings} map.
+     *
+     * @param bindings the bindings maps
+     * @return the {@link SlingJakartaHttpServletResponse} if found, {@code null} otherwise
+     */
+    public static SlingJakartaHttpServletResponse getJakartaResponse(Bindings bindings) {
+        return (SlingJakartaHttpServletResponse) bindings.get(SlingBindings.JAKARTA_RESPONSE);
     }
 
     /**

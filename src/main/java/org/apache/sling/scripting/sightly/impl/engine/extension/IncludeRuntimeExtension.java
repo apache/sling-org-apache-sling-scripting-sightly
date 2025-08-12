@@ -19,15 +19,15 @@
 package org.apache.sling.scripting.sightly.impl.engine.extension;
 
 import javax.script.Bindings;
-import javax.servlet.Servlet;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Map;
 
+import jakarta.servlet.Servlet;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.sling.api.SlingHttpServletRequest;
-import org.apache.sling.api.SlingHttpServletResponse;
+import org.apache.sling.api.SlingJakartaHttpServletRequest;
+import org.apache.sling.api.SlingJakartaHttpServletResponse;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.api.servlets.ServletResolver;
 import org.apache.sling.scripting.sightly.SightlyException;
@@ -58,19 +58,20 @@ public class IncludeRuntimeExtension implements RuntimeExtension {
         ExtensionUtils.checkArgumentCount(RuntimeExtension.INCLUDE, arguments, 2);
         RuntimeObjectModel runtimeObjectModel = renderContext.getObjectModel();
         String originalPath = runtimeObjectModel.toString(arguments[0]);
-        Map options = (Map) arguments[1];
+        Map<?, ?> options = (Map<?, ?>) arguments[1];
         String path = buildPath(originalPath, options);
         StringWriter output = new StringWriter();
         final Bindings bindings = renderContext.getBindings();
-        SlingHttpServletRequest request = BindingsUtils.getRequest(bindings);
-        Map originalAttributes =
-                ExtensionUtils.setRequestAttributes(request, (Map) options.remove(OPTION_REQUEST_ATTRIBUTES));
+        SlingJakartaHttpServletRequest request = BindingsUtils.getJakartaRequest(bindings);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> originalAttributes = ExtensionUtils.setRequestAttributes(
+                request, (Map<String, Object>) options.remove(OPTION_REQUEST_ATTRIBUTES));
         includeScript(bindings, path, new PrintWriter(output));
         ExtensionUtils.setRequestAttributes(request, originalAttributes);
         return output.toString();
     }
 
-    private String buildPath(String path, Map options) {
+    private String buildPath(String path, Map<?, ?> options) {
         if (StringUtils.isEmpty(path)) {
             path = (String) options.get(OPTION_FILE);
         }
@@ -98,6 +99,7 @@ public class IncludeRuntimeExtension implements RuntimeExtension {
         return prependPath + path + appendPath;
     }
 
+    @SuppressWarnings("deprecation")
     private void includeScript(final Bindings bindings, String script, PrintWriter out) {
         if (StringUtils.isEmpty(script)) {
             throw new SightlyException("Path for data-sly-include is empty");
@@ -106,18 +108,35 @@ public class IncludeRuntimeExtension implements RuntimeExtension {
             SlingScriptHelper slingScriptHelper = BindingsUtils.getHelper(bindings);
             ServletResolver servletResolver = slingScriptHelper.getService(ServletResolver.class);
             if (servletResolver != null) {
-                SlingHttpServletRequest request = BindingsUtils.getRequest(bindings);
-                Servlet servlet = servletResolver.resolveServlet(request.getResource(), script);
-                if (servlet != null) {
+                // first try resolving as a jakarta servlet
+                SlingJakartaHttpServletRequest jakartaRequest = BindingsUtils.getJakartaRequest(bindings);
+                Servlet jakartaServlet = servletResolver.resolve(jakartaRequest.getResource(), script);
+                if (jakartaServlet != null) {
                     try {
-                        SlingHttpServletResponse response = BindingsUtils.getResponse(bindings);
-                        PrintWriterResponseWrapper resWrapper = new PrintWriterResponseWrapper(out, response);
-                        servlet.service(request, resWrapper);
+                        SlingJakartaHttpServletResponse response = BindingsUtils.getJakartaResponse(bindings);
+                        PrintWriterJakartaResponseWrapper resWrapper =
+                                new PrintWriterJakartaResponseWrapper(out, response);
+                        jakartaServlet.service(jakartaRequest, resWrapper);
                     } catch (Exception e) {
                         throw new SightlyException("Failed to include script " + script, e);
                     }
                 } else {
-                    throw new SightlyException("Failed to locate script " + script);
+                    // fallback try resolving as a javax servlet
+                    org.apache.sling.api.SlingHttpServletRequest javaxRequest = BindingsUtils.getRequest(bindings);
+                    javax.servlet.Servlet javaxServlet =
+                            servletResolver.resolveServlet(javaxRequest.getResource(), script);
+                    if (javaxServlet != null) {
+                        try {
+                            org.apache.sling.api.SlingHttpServletResponse response =
+                                    BindingsUtils.getResponse(bindings);
+                            PrintWriterResponseWrapper resWrapper = new PrintWriterResponseWrapper(out, response);
+                            javaxServlet.service(javaxRequest, resWrapper);
+                        } catch (Exception e) {
+                            throw new SightlyException("Failed to include script " + script, e);
+                        }
+                    } else {
+                        throw new SightlyException("Failed to locate script " + script);
+                    }
                 }
             } else {
                 throw new SightlyException("Sling ServletResolver service is unavailable, failed to include " + script);

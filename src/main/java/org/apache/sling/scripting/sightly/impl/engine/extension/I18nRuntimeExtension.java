@@ -27,7 +27,7 @@ import java.util.ResourceBundle;
 
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingJakartaHttpServletRequest;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.i18n.ResourceBundleProvider;
 import org.apache.sling.scripting.sightly.extension.RuntimeExtension;
@@ -50,6 +50,7 @@ public class I18nRuntimeExtension implements RuntimeExtension {
         ExtensionUtils.checkArgumentCount(RuntimeExtension.I18N, arguments, 2);
         RuntimeObjectModel runtimeObjectModel = renderContext.getObjectModel();
         String text = runtimeObjectModel.toString(arguments[0]);
+        @SuppressWarnings("unchecked")
         Map<String, Object> options = (Map<String, Object>) arguments[1];
         String locale = runtimeObjectModel.toString(options.get("locale"));
         String hint = runtimeObjectModel.toString(options.get("hint"));
@@ -61,7 +62,7 @@ public class I18nRuntimeExtension implements RuntimeExtension {
     private volatile boolean logged;
 
     private Object getResourceBundleProvider(SlingScriptHelper slingScriptHelper) {
-        Class clazz;
+        Class<?> clazz;
         try {
             clazz = getClass().getClassLoader().loadClass("org.apache.sling.i18n.ResourceBundleProvider");
         } catch (Throwable t) {
@@ -77,7 +78,7 @@ public class I18nRuntimeExtension implements RuntimeExtension {
     private String get(final Bindings bindings, String text, String locale, String basename, String hint) {
 
         final SlingScriptHelper slingScriptHelper = BindingsUtils.getHelper(bindings);
-        final SlingHttpServletRequest request = BindingsUtils.getRequest(bindings);
+        final SlingJakartaHttpServletRequest request = BindingsUtils.getJakartaRequest(bindings);
         final Object resourceBundleProvider = getResourceBundleProvider(slingScriptHelper);
         if (resourceBundleProvider != null) {
             String key = text;

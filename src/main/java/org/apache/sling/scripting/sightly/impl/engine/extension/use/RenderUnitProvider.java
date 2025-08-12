@@ -24,7 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingJakartaHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
@@ -76,7 +76,7 @@ public class RenderUnitProvider implements UseProvider {
         if (identifier.endsWith("." + SightlyScriptEngineFactory.EXTENSION)) {
             Bindings globalBindings = renderContext.getBindings();
             SlingScriptHelper sling = BindingsUtils.getHelper(globalBindings);
-            SlingHttpServletRequest request = BindingsUtils.getRequest(globalBindings);
+            SlingJakartaHttpServletRequest request = BindingsUtils.getJakartaRequest(globalBindings);
             final Resource renderUnitResource = scriptDependencyResolver.resolveScript(renderContext, identifier);
             if (renderUnitResource == null) {
                 // attempt to find a bundled render unit that does not expose a servlet resource via the search paths
@@ -84,7 +84,8 @@ public class RenderUnitProvider implements UseProvider {
                 if (renderUnit != null) {
                     return ProviderOutcome.success(renderUnit);
                 }
-                Resource caller = ResourceResolution.getResourceForRequest(request.getResourceResolver(), request);
+                Resource caller =
+                        ResourceResolution.getResourceForJakartaRequest(request.getResourceResolver(), request);
                 if (caller != null) {
                     String resourceSuperType = caller.getResourceSuperType();
                     StringBuilder errorMessage = new StringBuilder("Cannot find resource ");

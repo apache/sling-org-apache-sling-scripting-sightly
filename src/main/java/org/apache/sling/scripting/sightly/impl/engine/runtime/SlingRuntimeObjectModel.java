@@ -42,6 +42,7 @@ public class SlingRuntimeObjectModel extends AbstractRuntimeObjectModel {
         this.legacyToBoolean = legacyToBoolean;
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public boolean toBoolean(Object object) {
         if (legacyToBoolean) {
@@ -49,8 +50,7 @@ public class SlingRuntimeObjectModel extends AbstractRuntimeObjectModel {
                 return false;
             }
 
-            if (object instanceof Number) {
-                Number number = (Number) object;
+            if (object instanceof Number number) {
                 return number.doubleValue() != 0.0;
             }
 
@@ -64,12 +64,12 @@ public class SlingRuntimeObjectModel extends AbstractRuntimeObjectModel {
                 return Boolean.parseBoolean(s);
             }
 
-            if (object instanceof Collection) {
-                return !((Collection) object).isEmpty();
+            if (object instanceof Collection collection) {
+                return !collection.isEmpty();
             }
 
-            if (object instanceof Map) {
-                return !((Map) object).isEmpty();
+            if (object instanceof Map map) {
+                return !map.isEmpty();
             }
 
             if (object instanceof Iterable<?>) {
@@ -80,8 +80,8 @@ public class SlingRuntimeObjectModel extends AbstractRuntimeObjectModel {
                 return ((Iterator<?>) object).hasNext();
             }
 
-            if (object instanceof Optional) {
-                return toBoolean(((Optional) object).orElse(false));
+            if (object instanceof Optional optional) {
+                return toBoolean(optional.orElse(false));
             }
 
             if (object.getClass().isArray()) {
@@ -99,8 +99,8 @@ public class SlingRuntimeObjectModel extends AbstractRuntimeObjectModel {
             return null;
         }
         Object result = super.getProperty(target, propertyObj);
-        if (result == null && target instanceof Adaptable) {
-            ValueMap valueMap = ((Adaptable) target).adaptTo(ValueMap.class);
+        if (result == null && target instanceof Adaptable adaptable) {
+            ValueMap valueMap = adaptable.adaptTo(ValueMap.class);
             if (valueMap != null) {
                 String property = toString(propertyObj);
                 result = valueMap.get(property);

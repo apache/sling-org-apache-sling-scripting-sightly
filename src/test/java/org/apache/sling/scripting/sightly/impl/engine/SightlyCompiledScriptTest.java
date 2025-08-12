@@ -32,11 +32,12 @@ import java.util.Map;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.api.scripting.SlingScriptHelper;
+import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.render.RenderUnit;
 import org.apache.sling.testing.mock.osgi.MockOsgi;
 import org.apache.sling.testing.mock.sling.MockSling;
 import org.apache.sling.testing.mock.sling.junit.SlingContext;
-import org.apache.sling.testing.mock.sling.servlet.MockSlingHttpServletRequest;
+import org.apache.sling.testing.mock.sling.servlet.MockSlingJakartaHttpServletRequest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -44,6 +45,8 @@ import org.osgi.framework.BundleContext;
 import org.powermock.reflect.Whitebox;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -73,16 +76,18 @@ public class SightlyCompiledScriptTest {
                 mock(ExtensionRegistryService.class),
                 new Hashtable<String, Object>());
         ResourceResolver resourceResolver = MockSling.newResourceResolver(bundleContext);
-        final MockSlingHttpServletRequest request =
-                spy(new MockSlingHttpServletRequest(resourceResolver, bundleContext));
+        final MockSlingJakartaHttpServletRequest request =
+                spy(new MockSlingJakartaHttpServletRequest(resourceResolver, bundleContext));
         SightlyCompiledScript compiledScript = spy(new SightlyCompiledScript(scriptEngine, renderUnit));
+        assertSame(compiledScript.getEngine(), scriptEngine);
+        assertSame(compiledScript.getRenderUnit(), renderUnit);
         ScriptContext scriptContext = mock(ScriptContext.class);
         StringWriter writer = new StringWriter();
         when(scriptContext.getWriter()).thenReturn(writer);
         Bindings scriptContextBindings = new SimpleBindings() {
             {
                 put("test", "testValue");
-                put(SlingBindings.REQUEST, request);
+                put(SlingBindings.JAKARTA_REQUEST, request);
                 put(SlingBindings.SLING, mock(SlingScriptHelper.class));
             }
         };
@@ -105,7 +110,8 @@ public class SightlyCompiledScriptTest {
                     assertEquals(oldBindings, bindings);
                     break;
                 case 2:
-                    assertEquals(3, bindings.size());
+                    // NOTE: 4 instead of 3 due to the new additional jarkarta->javax wrapper
+                    assertEquals(4, bindings.size());
                     for (Map.Entry<String, Object> entry : scriptContextBindings.entrySet()) {
                         assertEquals(entry.getValue(), bindings.get(entry.getKey()));
                     }
@@ -118,5 +124,15 @@ public class SightlyCompiledScriptTest {
         for (String key : attributeNameArgumentCaptor.getAllValues()) {
             assertEquals(SlingBindings.class.getName(), key);
         }
+    }
+
+    @Test
+    public void testEvalSlingBindingsWithNullRequest() {
+        SightlyScriptEngine scriptEngine = mock(SightlyScriptEngine.class);
+        final RenderUnit renderUnit = mock(RenderUnit.class);
+        SightlyCompiledScript compiledScript = spy(new SightlyCompiledScript(scriptEngine, renderUnit));
+        ScriptContext scriptContext = mock(ScriptContext.class);
+        when(scriptContext.getBindings(ScriptContext.ENGINE_SCOPE)).thenReturn(new SlingBindings());
+        assertThrows(SightlyException.class, () -> compiledScript.eval(scriptContext));
     }
 }

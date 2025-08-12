@@ -19,14 +19,14 @@
 package org.apache.sling.scripting.sightly.impl.engine.extension.use;
 
 import javax.script.Bindings;
-import javax.servlet.ServletRequest;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.sling.api.SlingHttpServletRequest;
+import jakarta.servlet.ServletRequest;
+import org.apache.sling.api.SlingJakartaHttpServletRequest;
 import org.apache.sling.api.adapter.Adaptable;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.scripting.SlingScriptHelper;
@@ -64,7 +64,7 @@ public class JavaUseProvider implements UseProvider {
                 description =
                         "The Service Ranking value acts as the priority with which this Use Provider is queried to return an "
                                 + "Use-object. A higher value represents a higher priority.")
-        int service_ranking() default 90;
+        int service_ranking() default 90; // NOSONAR
     }
 
     private static final String ADAPTABLE = "adaptable";
@@ -89,7 +89,7 @@ public class JavaUseProvider implements UseProvider {
             return ProviderOutcome.failure();
         }
         Bindings globalBindings = renderContext.getBindings();
-        SlingHttpServletRequest request = BindingsUtils.getRequest(globalBindings);
+        SlingJakartaHttpServletRequest request = BindingsUtils.getJakartaRequest(globalBindings);
         Map<String, Object> overrides = setRequestAttributes(request, arguments);
 
         try {
@@ -120,8 +120,8 @@ public class JavaUseProvider implements UseProvider {
             if (slingHTLMasterCompiler != null) {
                 Object result = slingHTLMasterCompiler.getResourceBackedUseObject(renderContext, identifier);
                 if (result != null) {
-                    if (result instanceof Use) {
-                        ((Use) result).init(BindingsUtils.merge(globalBindings, arguments));
+                    if (result instanceof Use use) {
+                        use.init(BindingsUtils.merge(globalBindings, arguments));
                     }
                     return ProviderOutcome.success(result);
                 } else {
@@ -164,13 +164,15 @@ public class JavaUseProvider implements UseProvider {
         Object adaptableCandidate = arguments.get(ADAPTABLE);
         Adaptable adaptable = null;
 
-        if (adaptableCandidate instanceof Adaptable) {
-            adaptable = (Adaptable) adaptableCandidate;
+        if (adaptableCandidate instanceof Adaptable adaptableValue) {
+            adaptable = adaptableValue;
         } else {
             LOG.debug("The provided adaptable argument value, was not of type Adaptable");
         }
 
-        SlingHttpServletRequest request = BindingsUtils.getRequest(globalBindings);
+        SlingJakartaHttpServletRequest jakartaRequest = BindingsUtils.getJakartaRequest(globalBindings);
+        @SuppressWarnings("deprecation")
+        org.apache.sling.api.SlingHttpServletRequest javaxRequest = BindingsUtils.getRequest(globalBindings);
         Resource resource = BindingsUtils.getResource(globalBindings);
         // Sling Model
         if (modelFactory != null && ((ModelFactory) modelFactory).isModelClass(cls)) {
@@ -181,10 +183,18 @@ public class JavaUseProvider implements UseProvider {
                     LOG.debug("Trying to instantiate class {} as Sling Model from provided adaptable.", cls);
                     return ProviderOutcome.notNullOrFailure(((ModelFactory) modelFactory).createModel(adaptable, cls));
                 }
-                // then, try to use the request
-                if (request != null && ((ModelFactory) modelFactory).canCreateFromAdaptable(request, cls)) {
-                    LOG.debug("Trying to instantiate class {} as Sling Model from request.", cls);
-                    return ProviderOutcome.notNullOrFailure(((ModelFactory) modelFactory).createModel(request, cls));
+                // then, try to use the jakarta request
+                if (jakartaRequest != null
+                        && ((ModelFactory) modelFactory).canCreateFromAdaptable(jakartaRequest, cls)) {
+                    LOG.debug("Trying to instantiate class {} as Sling Model from jakarta request.", cls);
+                    return ProviderOutcome.notNullOrFailure(
+                            ((ModelFactory) modelFactory).createModel(jakartaRequest, cls));
+                }
+                // then, try to use the javax request
+                if (javaxRequest != null && ((ModelFactory) modelFactory).canCreateFromAdaptable(javaxRequest, cls)) {
+                    LOG.debug("Trying to instantiate class {} as Sling Model from javax request.", cls);
+                    return ProviderOutcome.notNullOrFailure(
+                            ((ModelFactory) modelFactory).createModel(javaxRequest, cls));
                 }
                 // finally, try to use the resource
                 if (resource != null && ((ModelFactory) modelFactory).canCreateFromAdaptable(resource, cls)) {
@@ -203,9 +213,13 @@ public class JavaUseProvider implements UseProvider {
             LOG.debug("Trying to instantiate class {} as sling adapter via adaptable.adaptTo().", cls);
             adaptableResult = adaptable.adaptTo(cls);
         }
-        if (adaptableResult == null && request != null) {
-            LOG.debug("Trying to instantiate class {} as sling adapter via request.adaptTo().", cls);
-            adaptableResult = request.adaptTo(cls);
+        if (adaptableResult == null && jakartaRequest != null) {
+            LOG.debug("Trying to instantiate class {} as sling adapter via jakarta request.adaptTo().", cls);
+            adaptableResult = jakartaRequest.adaptTo(cls);
+        }
+        if (adaptableResult == null && javaxRequest != null) {
+            LOG.debug("Trying to instantiate class {} as sling adapter via javax request.adaptTo().", cls);
+            adaptableResult = javaxRequest.adaptTo(cls);
         }
         if (adaptableResult == null && resource != null) {
             LOG.debug("Trying to instantiate class {} as sling adapter via resource.adaptTo().", cls);
@@ -225,11 +239,11 @@ public class JavaUseProvider implements UseProvider {
         } else {
             /*
              * the object was cached by the class loader but it's not adaptable from {@link Resource} or {@link
-             * SlingHttpServletRequest}; attempt to load it like a regular POJO that optionally could implement {@link Use}
+             * SlingJakartaHttpServletRequest}; attempt to load it like a regular POJO that optionally could implement {@link Use}
              */
             Object javaUseResult = cls.getDeclaredConstructor().newInstance();
-            if (javaUseResult instanceof Use) {
-                ((Use) javaUseResult).init(BindingsUtils.merge(globalBindings, arguments));
+            if (javaUseResult instanceof Use use) {
+                use.init(BindingsUtils.merge(globalBindings, arguments));
             }
             return ProviderOutcome.notNullOrFailure(javaUseResult);
         }
@@ -237,28 +251,32 @@ public class JavaUseProvider implements UseProvider {
 
     private Map<String, Object> setRequestAttributes(ServletRequest request, Bindings arguments) {
         Map<String, Object> overrides = new HashMap<>();
-        for (Map.Entry<String, Object> entry : arguments.entrySet()) {
-            String key = entry.getKey();
-            Object value = entry.getValue();
-            Object oldValue = request.getAttribute(key);
-            if (oldValue != null) {
-                overrides.put(key, oldValue);
-            } else {
-                overrides.put(key, NULL);
+        if (request != null) {
+            for (Map.Entry<String, Object> entry : arguments.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                Object oldValue = request.getAttribute(key);
+                if (oldValue != null) {
+                    overrides.put(key, oldValue);
+                } else {
+                    overrides.put(key, NULL);
+                }
+                request.setAttribute(key, value);
             }
-            request.setAttribute(key, value);
         }
         return overrides;
     }
 
     private void resetRequestAttribute(ServletRequest request, Map<String, Object> overrides) {
-        for (Map.Entry<String, Object> entry : overrides.entrySet()) {
-            String key = entry.getKey();
-            Object value = entry.getValue();
-            if (value == NULL) {
-                request.removeAttribute(key);
-            } else {
-                request.setAttribute(key, value);
+        if (request != null) {
+            for (Map.Entry<String, Object> entry : overrides.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                if (value == NULL) {
+                    request.removeAttribute(key);
+                } else {
+                    request.setAttribute(key, value);
+                }
             }
         }
     }
