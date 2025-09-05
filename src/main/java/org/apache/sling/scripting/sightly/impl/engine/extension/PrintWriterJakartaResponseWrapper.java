@@ -21,15 +21,13 @@ package org.apache.sling.scripting.sightly.impl.engine.extension;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import org.apache.sling.api.SlingHttpServletResponse;
-import org.apache.sling.api.wrappers.SlingHttpServletResponseWrapper;
+import org.apache.sling.api.SlingJakartaHttpServletResponse;
+import org.apache.sling.api.wrappers.SlingJakartaHttpServletResponseWrapper;
 
 /**
  * Wrapper response to redirect the output into a specified print writer
- * @deprecated use {@link PrintWriterJakartaResponseWrapper} instead
  */
-@Deprecated(since = "2.0.0-1.4.0")
-public class PrintWriterResponseWrapper extends SlingHttpServletResponseWrapper {
+public class PrintWriterJakartaResponseWrapper extends SlingJakartaHttpServletResponseWrapper {
 
     private final PrintWriter writer;
 
@@ -39,7 +37,7 @@ public class PrintWriterResponseWrapper extends SlingHttpServletResponseWrapper 
      * @param writer - the base writer
      * @param wrappedResponse - the wrapped response
      */
-    public PrintWriterResponseWrapper(PrintWriter writer, SlingHttpServletResponse wrappedResponse) {
+    public PrintWriterJakartaResponseWrapper(PrintWriter writer, SlingJakartaHttpServletResponse wrappedResponse) {
         super(wrappedResponse);
         this.writer = writer;
     }

@@ -25,7 +25,7 @@ import javax.script.ScriptEngine;
 
 import java.io.PrintWriter;
 
-import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingJakartaHttpServletRequest;
 import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.scripting.sightly.SightlyException;
@@ -48,9 +48,9 @@ public class SightlyCompiledScript extends CompiledScript {
         Bindings bindings = context.getBindings(ScriptContext.ENGINE_SCOPE);
         SlingBindings slingBindings = new SlingBindings();
         slingBindings.putAll(bindings);
-        SlingHttpServletRequest request = slingBindings.getRequest();
+        SlingJakartaHttpServletRequest request = slingBindings.getJakartaRequest();
         if (request == null) {
-            throw new SightlyException("Missing SlingHttpServletRequest from ScriptContext.");
+            throw new SightlyException("Missing SlingJakartaHttpServletRequest from ScriptContext.");
         }
         Object oldBindings = request.getAttribute(SlingBindings.class.getName());
         try {

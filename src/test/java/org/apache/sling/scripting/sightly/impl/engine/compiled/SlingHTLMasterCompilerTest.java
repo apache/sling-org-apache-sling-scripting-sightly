@@ -264,6 +264,8 @@ public class SlingHTLMasterCompilerTest {
     @Test
     public void testGetPOJOFromFQCN() {
         Map<String, String> expectedScriptNames = new HashMap<String, String>() {
+            private static final long serialVersionUID = 1L;
+
             {
                 put("/apps/a_b_c/d_e_f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a_b_c/d_e_f/Pojo"));
                 put("/apps/a-b-c/d.e.f/Pojo.java", JavaEscapeHelper.makeJavaPackage("/apps/a-b-c/d.e.f/Pojo"));

@@ -77,12 +77,12 @@ public class ScriptDependencyResolverTest {
         testResourceProperties.put("sling:resourceType", "inherit");
         ResourceUtil.getOrCreateResource(
                 context.resourceResolver(), "/content/test", testResourceProperties, "sling:Folder", true);
-        context.request().setResource(context.resourceResolver().getResource("/content/test"));
+        context.jakartaRequest().setResource(context.resourceResolver().getResource("/content/test"));
 
         renderContext = mock(RenderContext.class);
         Bindings bindings = mock(Bindings.class);
         when(renderContext.getBindings()).thenReturn(bindings);
-        when(bindings.get(SlingBindings.REQUEST)).thenReturn(context.request());
+        when(bindings.get(SlingBindings.JAKARTA_REQUEST)).thenReturn(context.jakartaRequest());
     }
 
     // Perform the remaining setup work, which depends on the configuration

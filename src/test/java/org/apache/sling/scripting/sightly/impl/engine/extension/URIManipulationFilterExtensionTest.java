@@ -94,6 +94,8 @@ public class URIManipulationFilterExtensionTest {
         assertEquals(
                 "/example/search.html?q=6%25-10%25",
                 underTest.call(renderContext, "/example/search?q=6%25-10%25", new LinkedHashMap<String, Object>() {
+                    private static final long serialVersionUID = 1L;
+
                     {
                         put(URIManipulationFilterExtension.EXTENSION, "html");
                     }
@@ -101,10 +103,14 @@ public class URIManipulationFilterExtensionTest {
         assertEquals(
                 "/example/search.a.html?q=6%25-10%25&s=%40sling&t=%25sling",
                 underTest.call(renderContext, "/example/search?q=6%25-10%25", new LinkedHashMap<String, Object>() {
+                    private static final long serialVersionUID = 1L;
+
                     {
                         put(URIManipulationFilterExtension.EXTENSION, "html");
                         put(URIManipulationFilterExtension.ADD_SELECTORS, "a");
                         put(URIManipulationFilterExtension.ADD_QUERY, new LinkedHashMap<String, Object>() {
+                            private static final long serialVersionUID = 1L;
+
                             {
                                 put("s", "@sling");
                                 put("t", "%sling");
@@ -120,6 +126,8 @@ public class URIManipulationFilterExtensionTest {
         assertEquals(
                 "mailto:test@apache.org",
                 underTest.call(renderContext, "mailto:test@apache.org", new LinkedHashMap<String, Object>() {
+                    private static final long serialVersionUID = 1L;
+
                     {
                         put(URIManipulationFilterExtension.EXTENSION, "html");
                     }
@@ -136,6 +144,8 @@ public class URIManipulationFilterExtensionTest {
                 + "hhx4dbgYKAAA7";
 
         assertEquals(dataUrl, underTest.call(renderContext, dataUrl, new LinkedHashMap<String, Object>() {
+            private static final long serialVersionUID = 1L;
+
             {
                 put(URIManipulationFilterExtension.EXTENSION, "html");
             }

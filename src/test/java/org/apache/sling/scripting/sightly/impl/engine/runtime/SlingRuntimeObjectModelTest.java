@@ -91,13 +91,15 @@ public class SlingRuntimeObjectModelTest {
         assertTrue(runtimeObjectModel.toBoolean("TrUE"));
         Integer[] testArray = new Integer[] {1, 2, 3};
         int[] testPrimitiveArray = new int[] {1, 2, 3};
-        List testList = Arrays.asList(testArray);
+        List<Integer> testList = Arrays.asList(testArray);
         assertTrue(runtimeObjectModel.toBoolean(testArray));
         assertTrue(runtimeObjectModel.toBoolean(testPrimitiveArray));
         assertFalse(runtimeObjectModel.toBoolean(new Integer[] {}));
         assertTrue(runtimeObjectModel.toBoolean(testList));
         assertFalse(runtimeObjectModel.toBoolean(Collections.emptyList()));
         Map<String, Integer> map = new HashMap<String, Integer>() {
+            private static final long serialVersionUID = 1L;
+
             {
                 put("one", 1);
                 put("two", 2);
@@ -120,6 +122,8 @@ public class SlingRuntimeObjectModelTest {
         assertTrue(runtimeObjectModel.toBoolean(Optional.of(1)));
         assertTrue(runtimeObjectModel.toBoolean(new Object()));
         Map<String, String> map2 = new HashMap<String, String>() {
+            private static final long serialVersionUID = 1L;
+
             @Override
             public String toString() {
                 return null;
@@ -148,13 +152,15 @@ public class SlingRuntimeObjectModelTest {
         assertTrue(runtimeObjectModel.toBoolean("TrUE"));
         Integer[] testArray = new Integer[] {1, 2, 3};
         int[] testPrimitiveArray = new int[] {1, 2, 3};
-        List testList = Arrays.asList(testArray);
+        List<Integer> testList = Arrays.asList(testArray);
         assertTrue(runtimeObjectModel.toBoolean(testArray));
         assertTrue(runtimeObjectModel.toBoolean(testPrimitiveArray));
         assertFalse(runtimeObjectModel.toBoolean(new Integer[] {}));
         assertTrue(runtimeObjectModel.toBoolean(testList));
         assertFalse(runtimeObjectModel.toBoolean(Collections.emptyList()));
         Map<String, Integer> map = new HashMap<String, Integer>() {
+            private static final long serialVersionUID = 1L;
+
             {
                 put("one", 1);
                 put("two", 2);
@@ -177,6 +183,8 @@ public class SlingRuntimeObjectModelTest {
         assertTrue(runtimeObjectModel.toBoolean(Optional.of(1)));
         assertTrue(runtimeObjectModel.toBoolean(new Object()));
         Map<String, String> map2 = new HashMap<String, String>() {
+            private static final long serialVersionUID = 1L;
+
             @Override
             public String toString() {
                 return null;
@@ -191,12 +199,15 @@ public class SlingRuntimeObjectModelTest {
 
         ValueMap getValueMap() {
             return new ValueMapDecorator(new HashMap<String, Object>() {
+                private static final long serialVersionUID = 1L;
+
                 {
                     put("test", VALUE_MAP_VALUE);
                 }
             });
         }
 
+        @SuppressWarnings("unchecked")
         @Nullable
         @Override
         public <AdapterType> AdapterType adaptTo(@NotNull Class<AdapterType> aClass) {

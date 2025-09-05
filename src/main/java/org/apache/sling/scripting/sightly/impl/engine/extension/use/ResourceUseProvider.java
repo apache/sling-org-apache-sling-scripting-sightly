@@ -20,7 +20,7 @@ package org.apache.sling.scripting.sightly.impl.engine.extension.use;
 
 import javax.script.Bindings;
 
-import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingJakartaHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceUtil;
 import org.apache.sling.scripting.sightly.impl.utils.BindingsUtils;
@@ -44,13 +44,13 @@ public class ResourceUseProvider implements UseProvider {
                 description =
                         "The Service Ranking value acts as the priority with which this Use Provider is queried to return an "
                                 + "Use-object. A higher value represents a higher priority.")
-        int service_ranking() default -10;
+        int service_ranking() default -10; // NOSONAR
     }
 
     @Override
     public ProviderOutcome provide(String identifier, RenderContext renderContext, Bindings arguments) {
         Bindings globalBindings = renderContext.getBindings();
-        SlingHttpServletRequest request = BindingsUtils.getRequest(globalBindings);
+        SlingJakartaHttpServletRequest request = BindingsUtils.getJakartaRequest(globalBindings);
         String path = normalizePath(request, identifier);
         try {
             Resource resource = request.getResourceResolver().getResource(path);
@@ -63,7 +63,7 @@ public class ResourceUseProvider implements UseProvider {
         return ProviderOutcome.failure();
     }
 
-    private String normalizePath(SlingHttpServletRequest request, String path) {
+    private String normalizePath(SlingJakartaHttpServletRequest request, String path) {
         if (!path.startsWith("/")) {
             path = request.getResource().getPath() + "/" + path;
         }

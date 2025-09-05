@@ -56,6 +56,8 @@ public class SourceIdentifierTest {
     @Test
     public void testPOJOMangling() {
         Map<String, String> expectedMangling = new HashMap<String, String>() {
+            private static final long serialVersionUID = 1L;
+
             {
                 put("/apps/test-static/Pojo.java", "apps.test_static.Pojo");
                 put("/apps/_static/Pojo.java", "apps._static.Pojo");
